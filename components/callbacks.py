@@ -58,9 +58,9 @@ def run_volterra_solution(kernel_expr, rhs_expr, N_points):
 
     fig_solution = go.Figure()
     fig_solution.add_trace(go.Scatter(x=x, y=phi_reference, mode='lines', name='Эталон',
-                                      line=dict(color='red', width=2)))
+                                      line=dict(color='#e74c3c', width=2)))
     fig_solution.add_trace(go.Scatter(x=x, y=phi_numerical, mode='lines', name='Численное (RK4)',
-                                      line=dict(color='blue', dash='dash', width=1.5)))
+                                      line=dict(color='#2980b9', dash='dash', width=1.5)))
     fig_solution.update_layout(
         title='Решение уравнения Вольтерры',
         xaxis_title='x', yaxis_title='φ(x)', hovermode='x unified',
@@ -68,14 +68,14 @@ def run_volterra_solution(kernel_expr, rhs_expr, N_points):
 
     error = np.abs(phi_numerical - phi_reference)
     max_error = np.max(error)
-    error_text = f'📊 Максимальная ошибка: {max_error:.2e}'
+    error_text = f'Максимальная ошибка: {max_error:.2e}'
 
     fig_error = go.Figure()
     fig_error.add_trace(go.Scatter(x=x, y=error, mode='lines', name='Абсолютная ошибка',
-                                   line=dict(color='green', width=2)))
+                                   line=dict(color='#27ae60', width=2)))
     fig_error.add_trace(go.Scatter(x=x, y=[max_error] * len(x), mode='lines',
                                    name='Максимальная ошибка',
-                                   line=dict(color='red', dash='dash', width=1)))
+                                   line=dict(color='#e74c3c', dash='dash', width=1)))
     yaxis_type = 'log' if np.all(error > 0) else 'linear'
     fig_error.update_layout(
         title='Абсолютная ошибка |φ_числ - φ_эталон|',
@@ -83,7 +83,7 @@ def run_volterra_solution(kernel_expr, rhs_expr, N_points):
         hovermode='x unified', template='plotly_white', height=400)
 
     t_values = [0, 0.25, 0.5, 0.75, 1.0]
-    colors = ['blue', 'green', 'red', 'orange', 'purple']
+    colors = ['#2980b9', '#27ae60', '#e74c3c', '#f39c12', '#8e44ad']
     fig_kernel_sections = go.Figure()
     for t_val, color in zip(t_values, colors):
         K_section = [K_current(xi, t_val) for xi in x]
@@ -100,7 +100,7 @@ def run_volterra_solution(kernel_expr, rhs_expr, N_points):
     for i in range(len(X)):
         for j in range(len(T)):
             K_3d[i, j] = K_current(X[i, j], T[i, j])
-    fig_kernel_3d = go.Figure(data=[go.Surface(z=K_3d, x=X, y=T, colorscale='Viridis')])
+    fig_kernel_3d = go.Figure(data=[go.Surface(z=K_3d, x=X, y=T, colorscale='Blues')])
     fig_kernel_3d.update_layout(
         title='3D поверхность ядра K(x,t)',
         scene=dict(xaxis_title='x', yaxis_title='t', zaxis_title='K(x,t)'),
@@ -109,9 +109,9 @@ def run_volterra_solution(kernel_expr, rhs_expr, N_points):
     fig_diff = go.Figure()
     diff = phi_numerical - f_values
     fig_diff.add_trace(go.Scatter(x=x, y=diff, mode='lines', name='φ(x) - f(x)',
-                                  line=dict(color='red', width=2), fill='tozeroy'))
+                                  line=dict(color='#e74c3c', width=2), fill='tozeroy'))
     fig_diff.add_trace(go.Scatter(x=x, y=diff, mode='lines', name='Интегральный член',
-                                  line=dict(color='blue', width=2, dash='dash')))
+                                  line=dict(color='#2980b9', width=2, dash='dash')))
     fig_diff.update_layout(
         title='Разность φ(x) - f(x) (вклад интеграла)',
         xaxis_title='x', yaxis_title='Значение', hovermode='x unified',
@@ -137,7 +137,7 @@ def get_cached_functions(kernel_expr, rhs_expr):
 def format_equation_beautifully(kernel_expr, rhs_expr):
     if not kernel_expr or not rhs_expr:
         return html.Div([
-            html.Div("📝 Введите выражения для ядра K(x,t) и правой части f(x)", 
+            html.Div("Введите выражения для ядра K(x,t) и правой части f(x)", 
                     style={'color': '#666', 'fontStyle': 'italic', 'textAlign': 'center'})
         ])
     
@@ -160,33 +160,55 @@ def format_equation_beautifully(kernel_expr, rhs_expr):
         
         return html.Div([
             html.Div([
-                html.Span("φ(x) = ", style={'fontWeight': 'bold', 'fontSize': '1.3em', 'color': '#2c3e50'}),
-                html.Span(rhs_display, style={'color': '#27ae60', 'fontWeight': 'bold', 'fontSize': '1.3em'}),
-                html.Span(" + ", style={'fontWeight': 'bold', 'fontSize': '1.3em', 'color': '#2c3e50'}),
-                html.Span("∫₀ˣ ", style={'fontSize': '1.3em', 'color': '#2c3e50'}),
-                html.Span(kernel_display, style={'color': '#2980b9', 'fontWeight': 'bold', 'fontSize': '1.3em'}),
-                html.Span(" · φ(t) dt", style={'fontSize': '1.3em', 'color': '#2c3e50'}),
+                html.Span("φ(x) = ", style={'fontWeight': 'bold', 'fontSize': '1.2em', 'color': '#1a5276'}),
+                html.Span(rhs_display, style={'color': '#27ae60', 'fontWeight': 'bold', 'fontSize': '1.2em'}),
+                html.Span(" + ", style={'fontWeight': 'bold', 'fontSize': '1.2em', 'color': '#1a5276'}),
+                html.Span("∫₀ˣ ", style={'fontSize': '1.2em', 'color': '#1a5276'}),
+                html.Span(kernel_display, style={'color': '#2980b9', 'fontWeight': 'bold', 'fontSize': '1.2em'}),
+                html.Span(" · φ(t) dt", style={'fontSize': '1.2em', 'color': '#1a5276'}),
             ], style={'marginBottom': '15px', 'fontFamily': 'monospace', 'textAlign': 'center'}),
         ])
     except Exception as e:
         error_msg = str(e)
         return html.Div([
             html.Div([
-                html.Span("φ(x) = ", style={'fontWeight': 'bold', 'fontSize': '1.2em'}),
+                html.Span("φ(x) = ", style={'fontWeight': 'bold', 'fontSize': '1.1em'}),
                 html.Span(rhs_expr, style={'color': '#27ae60', 'fontFamily': 'monospace'}),
-                html.Span(" + ∫₀ˣ ", style={'fontSize': '1.2em'}),
+                html.Span(" + ∫₀ˣ ", style={'fontSize': '1.1em'}),
                 html.Span(kernel_expr, style={'color': '#2980b9', 'fontFamily': 'monospace'}),
-                html.Span(" · φ(t) dt", style={'fontSize': '1.2em'}),
+                html.Span(" · φ(t) dt", style={'fontSize': '1.1em'}),
             ], style={'marginBottom': '10px'}),
             html.Div([
-                html.Span("⚠️ ", style={'color': '#f39c12', 'fontSize': '1.1em'}),
+                html.Span("Внимание: ", style={'color': '#f39c12', 'fontSize': '1em'}),
                 html.Span(f"Некорректное выражение: {error_msg}", 
-                         style={'color': '#e74c3c', 'fontSize': '0.9em'})
+                         style={'color': '#e74c3c', 'fontSize': '0.85em'})
             ], style={'marginTop': '5px', 'padding': '8px', 'backgroundColor': '#fff3cd', 
                      'borderRadius': '5px', 'borderLeft': '3px solid #f39c12'})
         ])
     
 def register_callbacks(app):
+    
+    # Callback для валидации N точек
+    @app.callback(
+        Output('n-input', 'value'),
+        Input('n-input', 'value'),
+        prevent_initial_call=True
+    )
+    def validate_n_points(value):
+        if value is None or value == '':
+            return 200
+        
+        try:
+            val = int(value)
+            if val < 50:
+                val = 50
+            elif val > 500:
+                val = 500
+            val = ((val + 25) // 50) * 50
+            val = max(50, min(500, val))
+            return val
+        except (ValueError, TypeError):
+            return 200
     
     @app.callback(
         [Output('kernel-input', 'value'),
@@ -211,35 +233,6 @@ def register_callbacks(app):
             return no_update, RHS_EXAMPLES[example_name]
     
     @app.callback(
-        [Output('solve-button', 'disabled'),
-         Output('loading-indicator', 'style'),
-         Output('status-message', 'children'),
-         Output('status-message', 'style')],
-        [Input('solve-button', 'n_clicks')],
-        prevent_initial_call=True
-    )
-    def update_loading_state(n_clicks):
-        if n_clicks is None:
-            raise PreventUpdate
-        
-        loading_style = {
-            'display': 'block', 
-            'marginTop': '20px',
-            'padding': '15px',
-            'backgroundColor': '#f8f9fa',
-            'borderRadius': '10px'
-        }
-        
-        status_msg = html.Div([
-            html.Span("🔄 Вычисление... ", style={'fontWeight': 'bold'}),
-            html.Span("Это может занять несколько секунд")
-        ], style={'color': '#3498db'})
-        
-        status_style = {'textAlign': 'center', 'margin': '10px', 'padding': '10px'}
-        
-        return True, loading_style, status_msg, status_style
-    
-    @app.callback(
         Output('legend-content', 'style'),
         Input('legend-toggle', 'n_clicks'),
         prevent_initial_call=True
@@ -257,23 +250,23 @@ def register_callbacks(app):
     def update_equation_display(kernel_expr, rhs_expr):
         if not kernel_expr or not rhs_expr:
             return html.Div([
-                html.Div("📝 Введите выражения для ядра K(x,t) и правой части f(x)", 
+                html.Div("Введите выражения для ядра K(x,t) и правой части f(x)", 
                         style={'color': '#666', 'fontStyle': 'italic', 'textAlign': 'center'}),
                 html.Div("Пример: φ(x) = sin(x) + ∫₀ˣ 0.2·e^{-(x-t)}·φ(t) dt", 
-                        style={'fontSize': '0.9em', 'color': '#999', 'marginTop': '10px', 'textAlign': 'center'})
+                        style={'fontSize': '0.85em', 'color': '#999', 'marginTop': '10px', 'textAlign': 'center'})
             ])
         return format_equation_beautifully(kernel_expr, rhs_expr)
     
-    # Валидация при вводе (реального времени)
+    # Валидация при вводе (реального времени) 
     @app.callback(
         [Output('kernel-validation', 'children'),
          Output('kernel-validation', 'style'),
          Output('rhs-validation', 'children'),
          Output('rhs-validation', 'style'),
-         Output('solve-button', 'disabled', allow_duplicate=True)],
+         Output('solve-button', 'disabled')],
         [Input('kernel-input', 'value'),
          Input('rhs-input', 'value')],
-        prevent_initial_call='initial_duplicate'
+        prevent_initial_call=False
     )
     def validate_inputs_realtime(kernel_expr, rhs_expr):
         """Валидация в реальном времени при вводе"""
@@ -282,29 +275,31 @@ def register_callbacks(app):
         kernel_msg = ""
         rhs_msg = ""
         
-        # Проверка ядра
-        if kernel_expr and kernel_expr.strip():
+        if not kernel_expr or not kernel_expr.strip():
+            kernel_valid = False
+            kernel_msg = "Поле не может быть пустым"
+        else:
             valid, msg = validate_expression_detailed(kernel_expr, ['x', 't'])
             if not valid:
                 kernel_valid = False
-                kernel_msg = f"⚠️ {msg}"
+                kernel_msg = f"Ошибка: {msg}"
         
-        # Проверка правой части
-        if rhs_expr and rhs_expr.strip():
+        if not rhs_expr or not rhs_expr.strip():
+            rhs_valid = False
+            rhs_msg = "Поле не может быть пустым"
+        else:
             valid, msg = validate_expression_detailed(rhs_expr, ['x'])
             if not valid:
                 rhs_valid = False
-                rhs_msg = f"⚠️ {msg}"
+                rhs_msg = f"Ошибка: {msg}"
         
-        kernel_style = {'color': '#e74c3c', 'fontSize': '0.85em', 'marginTop': '5px'} if kernel_msg else {'display': 'none'}
-        rhs_style = {'color': '#e74c3c', 'fontSize': '0.85em', 'marginTop': '5px'} if rhs_msg else {'display': 'none'}
+        kernel_style = {'color': '#c0392b', 'fontSize': '0.85em', 'marginTop': '5px'} if kernel_msg else {'display': 'none'}
+        rhs_style = {'color': '#c0392b', 'fontSize': '0.85em', 'marginTop': '5px'} if rhs_msg else {'display': 'none'}
         
-        # Блокируем кнопку, если есть ошибки или поля пустые
-        button_disabled = not (kernel_expr and rhs_expr and kernel_valid and rhs_valid)
+        button_disabled = not (kernel_valid and rhs_valid)
         
         return kernel_msg, kernel_style, rhs_msg, rhs_style, button_disabled
     
-    # Callback для валидации при потере фокуса
     @app.callback(
         [Output('error-message', 'children'),
          Output('error-message', 'style')],
@@ -327,34 +322,34 @@ def register_callbacks(app):
             if not valid:
                 error_style = {
                     'textAlign': 'center', 
-                    'color': '#e74c3c', 
+                    'color': '#c0392b', 
                     'fontSize': '0.9em', 
                     'margin': '10px',
                     'padding': '10px',
-                    'backgroundColor': '#fde8e8',
+                    'backgroundColor': '#fce4ec',
                     'borderRadius': '5px',
-                    'borderLeft': '3px solid #e74c3c'
+                    'borderLeft': '3px solid #c0392b'
                 }
-                return f"❌ Ошибка в ядре K(x,t): {msg}", error_style
+                return f"Ошибка в ядре K(x,t): {msg}", error_style
                 
         elif triggered_id == 'rhs-input' and rhs_expr:
             valid, msg = validate_expression_detailed(rhs_expr, ['x'])
             if not valid:
                 error_style = {
                     'textAlign': 'center', 
-                    'color': '#e74c3c', 
+                    'color': '#c0392b', 
                     'fontSize': '0.9em', 
                     'margin': '10px',
                     'padding': '10px',
-                    'backgroundColor': '#fde8e8',
+                    'backgroundColor': '#fce4ec',
                     'borderRadius': '5px',
-                    'borderLeft': '3px solid #e74c3c'
+                    'borderLeft': '3px solid #c0392b'
                 }
-                return f"❌ Ошибка в правой части f(x): {msg}", error_style
+                return f"Ошибка в правой части f(x): {msg}", error_style
         
         return "", {"display": "none"}
     
-    # Callback для решения уравнения
+    # Callback для решения уравнения - с ПРОВЕРКОЙ валидности перед выполнением
     @app.callback(
         [Output('volterra-graph', 'figure'),
          Output('error-output', 'children'),
@@ -363,59 +358,98 @@ def register_callbacks(app):
          Output('kernel-sections-plot', 'figure'),
          Output('kernel-3d-plot', 'figure'),
          Output('difference-plot', 'figure'),
-         Output('solve-button', 'disabled', allow_duplicate=True),
-         Output('loading-indicator', 'style', allow_duplicate=True),
-         Output('status-message', 'children', allow_duplicate=True),
+         Output('loading-indicator', 'style'),
+         Output('status-message', 'children'),
+         Output('status-message', 'style'),
          Output('computation-time', 'data'),
-         Output('solutions-history', 'data', allow_duplicate=True)],
+         Output('solutions-history', 'data')],
         [Input('solve-button', 'n_clicks')],
         [State('kernel-input', 'value'),
          State('rhs-input', 'value'),
-         State('n-slider', 'value'),
+         State('n-input', 'value'),
          State('solutions-history', 'data')],
-        prevent_initial_call='initial_duplicate'
+        prevent_initial_call=True
     )
     def update_graph(n_clicks, kernel_expr, rhs_expr, N_points, history_data):
         if n_clicks is None:
             raise PreventUpdate
         
-        # Дополнительная проверка перед вычислением
-        if kernel_expr and rhs_expr:
-            kernel_valid, kernel_msg = validate_expression_detailed(kernel_expr, ['x', 't'])
-            rhs_valid, rhs_msg = validate_expression_detailed(rhs_expr, ['x'])
-            
-            if not kernel_valid:
-                error_status = html.Div([
-                    html.Span("❌ Ошибка! ", style={'fontWeight': 'bold'}),
-                    html.Div(kernel_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
-                ], style={'color': '#e74c3c'})
-                
-                empty_fig = go.Figure()
-                empty_fig.update_layout(title='Ошибка вычислений', template='plotly_white')
-                
-                return (empty_fig, "❌ Ошибка вычислений", empty_fig, f"❌ {kernel_msg}",
-                        empty_fig, empty_fig, empty_fig,
-                        False, {'display': 'none'}, error_status, 0, no_update)
-            
-            if not rhs_valid:
-                error_status = html.Div([
-                    html.Span("❌ Ошибка! ", style={'fontWeight': 'bold'}),
-                    html.Div(rhs_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
-                ], style={'color': '#e74c3c'})
-                
-                empty_fig = go.Figure()
-                empty_fig.update_layout(title='Ошибка вычислений', template='plotly_white')
-                
-                return (empty_fig, "❌ Ошибка вычислений", empty_fig, f"❌ {rhs_msg}",
-                        empty_fig, empty_fig, empty_fig,
-                        False, {'display': 'none'}, error_status, 0, no_update)
+        # ========== ВАЖНО: ПРОВЕРКА ВАЛИДНОСТИ ПЕРЕД ВЫЧИСЛЕНИЕМ ==========
+        # Эта проверка предотвращает выполнение при заблокированной кнопке
+        
+        # Проверка на пустые поля
+        if not kernel_expr or not kernel_expr.strip():
+            error_status = html.Div([
+                html.Span("Ошибка! ", style={'fontWeight': 'bold'}),
+                html.Div("Выражение для ядра не может быть пустым", style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
+            ], style={'color': '#c0392b'})
+            empty_fig = go.Figure()
+            empty_fig.update_layout(title='Ошибка вычислений', template='plotly_white')
+            return (empty_fig, "Ошибка вычислений", empty_fig, "Выражение для ядра не может быть пустым",
+                    empty_fig, empty_fig, empty_fig,
+                    {'display': 'none'}, error_status, {'textAlign': 'center', 'margin': '10px'}, 
+                    0, no_update)
+        
+        if not rhs_expr or not rhs_expr.strip():
+            error_status = html.Div([
+                html.Span("Ошибка! ", style={'fontWeight': 'bold'}),
+                html.Div("Выражение для правой части не может быть пустым", style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
+            ], style={'color': '#c0392b'})
+            empty_fig = go.Figure()
+            empty_fig.update_layout(title='Ошибка вычислений', template='plotly_white')
+            return (empty_fig, "Ошибка вычислений", empty_fig, "Выражение для правой части не может быть пустым",
+                    empty_fig, empty_fig, empty_fig,
+                    {'display': 'none'}, error_status, {'textAlign': 'center', 'margin': '10px'}, 
+                    0, no_update)
+        
+        # Проверка валидности ядра
+        kernel_valid, kernel_msg = validate_expression_detailed(kernel_expr, ['x', 't'])
+        if not kernel_valid:
+            error_status = html.Div([
+                html.Span("Ошибка! ", style={'fontWeight': 'bold'}),
+                html.Div(kernel_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
+            ], style={'color': '#c0392b'})
+            empty_fig = go.Figure()
+            empty_fig.update_layout(title='Ошибка вычислений', template='plotly_white')
+            return (empty_fig, "Ошибка вычислений", empty_fig, kernel_msg,
+                    empty_fig, empty_fig, empty_fig,
+                    {'display': 'none'}, error_status, {'textAlign': 'center', 'margin': '10px'}, 
+                    0, no_update)
+        
+        # Проверка валидности правой части
+        rhs_valid, rhs_msg = validate_expression_detailed(rhs_expr, ['x'])
+        if not rhs_valid:
+            error_status = html.Div([
+                html.Span("Ошибка! ", style={'fontWeight': 'bold'}),
+                html.Div(rhs_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
+            ], style={'color': '#c0392b'})
+            empty_fig = go.Figure()
+            empty_fig.update_layout(title='Ошибка вычислений', template='plotly_white')
+            return (empty_fig, "Ошибка вычислений", empty_fig, rhs_msg,
+                    empty_fig, empty_fig, empty_fig,
+                    {'display': 'none'}, error_status, {'textAlign': 'center', 'margin': '10px'}, 
+                    0, no_update)
+        
+        # Если все проверки пройдены - показываем индикатор загрузки
+        loading_style = {
+            'display': 'block', 
+            'marginTop': '20px',
+            'padding': '15px',
+            'backgroundColor': '#f8f9fa',
+            'borderRadius': '10px'
+        }
+        
+        status_msg = html.Div([
+            html.Span("Вычисление... ", style={'fontWeight': 'bold'}),
+            html.Span("Это может занять несколько секунд")
+        ], style={'color': '#2980b9'})
         
         try:
             (fig_solution, error_text, fig_error, fig_kernel_sections, fig_kernel_3d, fig_diff,
              computation_time) = run_volterra_solution(kernel_expr, rhs_expr, N_points)
             
             success_status = html.Div([
-                html.Span("✅ Вычисление успешно завершено! ", style={'fontWeight': 'bold'}),
+                html.Span("Вычисление успешно завершено! ", style={'fontWeight': 'bold'}),
                 html.Span(f"Время выполнения: {computation_time:.2f} секунд")
             ], style={'color': '#27ae60'})
             
@@ -449,12 +483,11 @@ def register_callbacks(app):
             
             return (fig_solution, error_text, fig_error, "", 
                     fig_kernel_sections, fig_kernel_3d, fig_diff,
-                    False, {'display': 'none'}, success_status, computation_time,
-                    new_history)
+                    {'display': 'none'}, success_status, {'textAlign': 'center', 'margin': '10px'}, 
+                    computation_time, new_history)
             
         except Exception as e:
             error_msg = str(e)
-            # Очищаем сообщение от лишних префиксов
             if "Ошибка при вычислении функции:" in error_msg:
                 error_msg = error_msg.split("Ошибка при вычислении функции:")[-1].strip()
             elif "Ошибка при вычислении на шаге" in error_msg:
@@ -462,20 +495,19 @@ def register_callbacks(app):
                 if len(parts) > 1:
                     error_msg = parts[-1].strip()
             
-            # Одно понятное сообщение об ошибке
             error_status = html.Div([
-                html.Span("❌ Ошибка! ", style={'fontWeight': 'bold'}),
+                html.Span("Ошибка! ", style={'fontWeight': 'bold'}),
                 html.Div(error_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
-            ], style={'color': '#e74c3c'})
+            ], style={'color': '#c0392b'})
             
             empty_fig = go.Figure()
             empty_fig.update_layout(title='Ошибка вычислений', template='plotly_white')
             
-            return (empty_fig, "❌ Ошибка вычислений", empty_fig, f"❌ {error_msg}",
+            return (empty_fig, "Ошибка вычислений", empty_fig, f"{error_msg}",
                     empty_fig, empty_fig, empty_fig,
-                    False, {'display': 'none'}, error_status, 0, no_update)
+                    {'display': 'none'}, error_status, {'textAlign': 'center', 'margin': '10px'}, 
+                    0, no_update)
 
-    # Callback для обновления списка истории
     @app.callback(
         Output('history-list', 'children'),
         [Input('solutions-history', 'data'),
@@ -486,11 +518,11 @@ def register_callbacks(app):
         ctx = callback_context
         
         if clear_clicks and ctx.triggered and 'clear-history-btn' in ctx.triggered[0]['prop_id']:
-            return html.Div("📭 История пуста. Решите уравнение, чтобы оно появилось здесь.", 
+            return html.Div("История пуста. Решите уравнение, чтобы оно появилось здесь.", 
                           style={'color': '#999', 'fontStyle': 'italic', 'textAlign': 'center', 'padding': '20px'})
         
         if not history_data or len(history_data) == 0:
-            return html.Div("📭 История пуста. Решите уравнение, чтобы оно появилось здесь.", 
+            return html.Div("История пуста. Решите уравнение, чтобы оно появилось здесь.", 
                           style={'color': '#999', 'fontStyle': 'italic', 'textAlign': 'center', 'padding': '20px'})
         
         history_items = []
@@ -507,10 +539,10 @@ def register_callbacks(app):
                         children=[
                             html.Div(
                                 children=[
-                                    html.Span(f"🕐 {record['timestamp']} | {record['date']}", 
-                                             style={'fontWeight': 'bold', 'color': '#2c3e50', 'fontSize': '0.9em'}),
+                                    html.Span(f"{record['timestamp']} | {record['date']}", 
+                                             style={'fontWeight': 'bold', 'color': '#1a5276', 'fontSize': '0.9em'}),
                                     html.Span(f" | N={record['n_points']}", 
-                                             style={'color': '#7f8c8d', 'fontSize': '0.85em', 'marginLeft': '10px'}),
+                                             style={'color': '#666', 'fontSize': '0.85em', 'marginLeft': '10px'}),
                                 ]
                             ),
                             html.Div(
@@ -525,13 +557,13 @@ def register_callbacks(app):
                             ),
                             html.Div(
                                 children=[
-                                    html.Button("📊 Загрузить", 
+                                    html.Button("Загрузить", 
                                                id={'type': 'load-solution', 'index': record['id']},
                                                style={'padding': '4px 12px', 'marginRight': '8px',
                                                       'backgroundColor': '#3498db', 'color': 'white',
                                                       'border': 'none', 'borderRadius': '3px',
                                                       'cursor': 'pointer', 'fontSize': '12px'}),
-                                    html.Button("🗑️ Удалить", 
+                                    html.Button("Удалить", 
                                                id={'type': 'delete-solution', 'index': record['id']},
                                                style={'padding': '4px 12px',
                                                       'backgroundColor': '#e74c3c', 'color': 'white',
@@ -552,11 +584,10 @@ def register_callbacks(app):
         
         return history_items
     
-    # Callback для загрузки решения из истории
     @app.callback(
         [Output('kernel-input', 'value', allow_duplicate=True),
          Output('rhs-input', 'value', allow_duplicate=True),
-         Output('n-slider', 'value', allow_duplicate=True),
+         Output('n-input', 'value', allow_duplicate=True),
          Output('volterra-graph', 'figure', allow_duplicate=True),
          Output('error-plot', 'figure', allow_duplicate=True),
          Output('kernel-sections-plot', 'figure', allow_duplicate=True),
@@ -592,7 +623,6 @@ def register_callbacks(app):
                 )
             except Exception as e:
                 error_msg = str(e)
-                # Очищаем сообщение от лишних префиксов
                 if "Ошибка при вычислении функции:" in error_msg:
                     error_msg = error_msg.split("Ошибка при вычислении функции:")[-1].strip()
                 elif "Ошибка при вычислении на шаге" in error_msg:
@@ -601,9 +631,9 @@ def register_callbacks(app):
                         error_msg = parts[-1].strip()
                 
                 status_msg = html.Div([
-                    html.Span("❌ Ошибка! ", style={'fontWeight': 'bold'}),
+                    html.Span("Ошибка! ", style={'fontWeight': 'bold'}),
                     html.Div(error_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
-                ], style={'color': '#e74c3c', 'textAlign': 'center', 'padding': '10px'})
+                ], style={'color': '#c0392b', 'textAlign': 'center', 'padding': '10px'})
                 return (
                     no_update, no_update, no_update,
                     no_update, no_update, no_update, no_update, no_update,
@@ -612,7 +642,7 @@ def register_callbacks(app):
                     {'textAlign': 'center', 'margin': '10px'},
                 )
             status_msg = html.Div([
-                html.Span("✅ Загружено из истории! ", style={'fontWeight': 'bold'}),
+                html.Span("Загружено из истории! ", style={'fontWeight': 'bold'}),
                 html.Span(f"Решение от {record.get('timestamp', '')} {record.get('date', '')}")
             ], style={'color': '#27ae60', 'textAlign': 'center', 'padding': '10px'})
             return (record['kernel'], record['rhs'], record['n_points'],
@@ -621,7 +651,6 @@ def register_callbacks(app):
         
         raise PreventUpdate
     
-    # Callback для удаления решения из истории
     @app.callback(
         Output('solutions-history', 'data', allow_duplicate=True),
         [Input({'type': 'delete-solution', 'index': ALL}, 'n_clicks')],
@@ -647,7 +676,6 @@ def register_callbacks(app):
         
         return new_history
     
-    # Callback для очистки всей истории
     @app.callback(
         Output('solutions-history', 'data', allow_duplicate=True),
         [Input('clear-history-btn', 'n_clicks')],

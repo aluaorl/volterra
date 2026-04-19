@@ -10,8 +10,8 @@ app = dash.Dash(__name__, external_stylesheets=['/assets/custom.css'], suppress_
 
 # Компоновка приложения
 app.layout = html.Div(children=[
-    html.H1(children='Интерактивный решатель уравнения Вольтерры II рода', 
-            style={'textAlign': 'center', 'color': '#2c3e50'}),
+    html.H1(children='Решатель уравнения Вольтерра II рода', 
+            style={'textAlign': 'center', 'color': '#1a5276'}),
     
     create_input_panel(),
     create_result_panels(),

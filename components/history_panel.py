@@ -3,14 +3,14 @@ from dash import html, dcc
 def create_history_panel():
     """Создает панель истории решений"""
     return html.Div([
-        html.H3("📚 История решений", style={
-            'color': '#2c3e50', 
+        html.H3("История решений", style={
+            'color': '#1a5276', 
             'marginTop': '30px',
             'marginBottom': '15px'
         }),
         
         html.Div([
-            html.Button("🗑️ Очистить историю", id='clear-history-btn',
+            html.Button("Очистить историю", id='clear-history-btn',
                        style={
                            'padding': '8px 20px',
                            'backgroundColor': '#e74c3c', 

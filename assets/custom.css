@@ -1,19 +1,33 @@
+/* Основные стили */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 20px;
-    background-color: #f8f8f8;
+    background-color: #f0f2f5;
     color: #333;
 }
 
 h1 {
     color: #1a5276;
     margin-bottom: 30px;
-    font-size: 2.5em;
+    font-size: 2.2em;
 }
 
 .dash-dropdown, .dash-slider {
     margin-top: 15px;
     margin-bottom: 25px;
+}
+
+/* Стили для числового поля ввода N */
+input[type="number"] {
+    border: 2px solid #2980b9 !important;
+    border-radius: 5px !important;
+    background-color: white !important;
+}
+
+input[type="number"]:focus {
+    outline: none !important;
+    border-color: #1a5276 !important;
+    box-shadow: 0 0 5px #2980b9 !important;
 }
 
 #error-output {
@@ -59,17 +73,23 @@ label {
 
 button:disabled {
     opacity: 0.6;
-    cursor: not-allowed;
+    cursor: not-allowed !important;
+    background-color: #95a5a6 !important;
 }
 
-/* Добавьте в конец файла */
+button:disabled:hover {
+    opacity: 0.6;
+    cursor: not-allowed !important;
+}
+
+/* Легенда */
 #legend-toggle {
     cursor: pointer;
     user-select: none;
 }
 
 #legend-toggle:hover {
-    color: #3498db;
+    color: #2980b9;
 }
 
 #legend-content {
@@ -80,8 +100,6 @@ button:disabled {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
-
-/* assets/custom.css */
 
 /* Анимация для истории */
 .history-item {
@@ -112,12 +130,6 @@ button:disabled {
     background: #555;
 }
 
-/* Анимация загрузки */
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
 /* Стили для кнопок истории */
 button:hover {
     opacity: 0.8;
@@ -127,4 +139,10 @@ button:hover {
 /* Стили для панели истории */
 #history-list {
     scroll-behavior: smooth;
+}
+
+/* Блок отображения уравнения */
+#equation-display {
+    background-color: #e8eef2 !important;
+    border: none !important;
 }

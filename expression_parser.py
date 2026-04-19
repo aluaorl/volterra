@@ -162,7 +162,7 @@ def validate_expression_detailed(expr_str, variables=['x', 't']):
                 for var in variables:
                     test_namespace[var] = test_val
                 safe_eval_with_checks(expr, test_namespace, test_val)
-            return True, "✓ Выражение корректно"
+            return True, "Выражение корректно"
         
         expr = preprocess_expression(expr)
         
@@ -202,7 +202,7 @@ def validate_expression_detailed(expr_str, variables=['x', 't']):
                 test_namespace[var] = test_val
             safe_eval_with_checks(expr, test_namespace, test_val)
         
-        return True, "✓ Выражение корректно"
+        return True, "Выражение корректно"
         
     except Exception as e:
         return False, str(e)
@@ -286,6 +286,6 @@ def validate_expression(expr_str, variables=['x', 't']):
     """Валидация выражения"""
     try:
         parse_user_input(expr_str, variables)
-        return True, "✓ Выражение корректно"
+        return True, "Выражение корректно"
     except ValueError as e:
         return False, str(e)
