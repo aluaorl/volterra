@@ -1,7 +1,8 @@
 import dash
-from dash import html
+from dash import html, dcc
 from components.input_panel import create_input_panel
 from components.result_panels import create_result_panels
+from components.history_panel import create_history_panel
 from components.callbacks import register_callbacks
 
 # Инициализация Dash приложения с suppress_callback_exceptions=True
@@ -14,6 +15,7 @@ app.layout = html.Div(children=[
     
     create_input_panel(),
     create_result_panels(),
+    create_history_panel(),
 ])
 
 # Регистрация всех callbacks

@@ -61,3 +61,70 @@ button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+/* Добавьте в конец файла */
+#legend-toggle {
+    cursor: pointer;
+    user-select: none;
+}
+
+#legend-toggle:hover {
+    color: #3498db;
+}
+
+#legend-content {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* assets/custom.css */
+
+/* Анимация для истории */
+.history-item {
+    transition: all 0.3s ease;
+}
+
+.history-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Стилизация скроллбара для истории */
+#history-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+#history-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#history-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+#history-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Анимация загрузки */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Стили для кнопок истории */
+button:hover {
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+/* Стили для панели истории */
+#history-list {
+    scroll-behavior: smooth;
+}

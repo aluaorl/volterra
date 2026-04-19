@@ -2,19 +2,19 @@ from dash import dcc, html
 
 # Примеры и подсказки для пользователя
 KERNEL_EXAMPLES = {
-    "Экспоненциальное": "0.2 * np.exp(-(x - t))",
-    "Косинусоидальное": "0.3 * np.cos(x - t)",
-    "Параболическое": "0.1 * (x - t)**2",
-    "Синусоидальное": "0.25 * np.sin(x + t)",
-    "Модифицированное экспоненциальное": "0.15 * np.exp(-np.abs(x - t))"
+    "Экспоненциальное": "0.2 * exp(-(x - t))",
+    "Косинусоидальное": "0.3 * cos(x - t)",
+    "Параболическое": "0.1 * (x - t)^2",
+    "Синусоидальное": "0.25 * sin(x + t)",
+    "Модифицированное экспоненциальное": "0.15 * exp(-abs(x - t))"
 }
 
 RHS_EXAMPLES = {
-    "Синус": "np.sin(x)",
-    "Косинус двойного аргумента": "np.cos(2*x)",
+    "Синус": "sin(x)",
+    "Косинус двойного аргумента": "cos(2*x)",
     "Парабола": "x * (1-x)",
-    "Экспонента": "np.exp(-x)",
-    "Синусоида": "np.sin(np.pi*x)"
+    "Экспонента": "exp(-x)",
+    "Синусоида": "sin(pi*x)"
 }
 
 def create_input_panel():
@@ -25,8 +25,9 @@ def create_input_panel():
                 html.Label('Ядро K(x,t):', style={'fontWeight': 'bold', 'fontSize': '1.1em'}),
                 dcc.Textarea(
                     id='kernel-input',
-                    placeholder='Введите выражение для ядра K(x,t) (используйте x и t как переменные)\nНапример: 0.2 * np.exp(-(x - t))',
-                    value='0.2 * np.exp(-(x - t))',
+                    placeholder='Введите выражение для ядра K(x,t) (используйте x и t как переменные)\nНапример: 0.2 * exp(-(x - t)) или 0.2*exp(-(x-t))',
+                    value='0.2 * exp(-(x - t))',
+                    n_blur=0,
                     style={
                         'width': '100%',
                         'height': '100px',
@@ -54,8 +55,9 @@ def create_input_panel():
                 html.Label('Правая часть f(x):', style={'fontWeight': 'bold', 'fontSize': '1.1em'}),
                 dcc.Textarea(
                     id='rhs-input',
-                    placeholder='Введите выражение для правой части f(x) (используйте x как переменную)\nНапример: np.sin(x)',
-                    value='np.sin(x)',
+                    placeholder='Введите выражение для правой части f(x) (используйте x как переменную)\nНапример: sin(x) или sinx',
+                    value='sin(x)',
+                    n_blur=0,
                     style={
                         'width': '100%',
                         'height': '100px',
@@ -88,10 +90,59 @@ def create_input_panel():
                 max=500,
                 step=50,
                 value=200,
-                marks={i: str(i) for i in range(100, 2001, 200)},
+                marks={i: str(i) for i in range(50, 501, 50)},
                 tooltip={"placement": "bottom", "always_visible": True}
             ),
         ], style={'padding': '20px'}),
+        
+        # Красивое отображение уравнения
+        html.Div([
+            html.H4('📝 Решаемое уравнение:', style={'color': '#2c3e50', 'marginBottom': '10px'}),
+            html.Div(id='equation-display', 
+                     style={'padding': '15px', 'backgroundColor': '#e8f4f8', 
+                            'borderRadius': '8px', 'fontFamily': 'monospace', 
+                            'fontSize': '1.2em', 'textAlign': 'center',
+                            'borderLeft': '4px solid #3498db'}),
+        ], style={'padding': '20px', 'marginTop': '10px'}),
+        
+        # Легенда функций
+        html.Div([
+            html.Div([
+                html.H5('📖 Поддерживаемые функции и константы:', 
+                        style={'color': '#2c3e50', 'marginBottom': '10px', 'cursor': 'pointer'},
+                        id='legend-toggle'),
+                html.Div([
+                    html.Div([
+                        html.Div([
+                            html.H6('Тригонометрические:', style={'color': '#e74c3c', 'marginBottom': '5px'}),
+                            html.P('sin, cos, tg/tan, ctg/cot, sec, csc/cosec', style={'margin': '0 0 10px 0'}),
+                            html.H6('Обратные тригонометрические:', style={'color': '#e74c3c', 'marginBottom': '5px'}),
+                            html.P('arcsin/asin/sin^-1, arccos/acos/cos^-1, arctg/atan/tg^-1, arcctg/acot/ctg^-1', 
+                                   style={'margin': '0 0 10px 0'}),
+                            html.H6('Гиперболические:', style={'color': '#e74c3c', 'marginBottom': '5px'}),
+                            html.P('sh/sinh, ch/cosh, th/tanh, cth/coth, sch, csch', style={'margin': '0 0 10px 0'}),
+                        ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                        
+                        html.Div([
+                            html.H6('Обратные гиперболические:', style={'color': '#e74c3c', 'marginBottom': '5px'}),
+                            html.P('arsh/asinh, arch/acosh, arth/atanh, arcth', style={'margin': '0 0 10px 0'}),
+                            html.H6('Логарифмы и степени:', style={'color': '#e74c3c', 'marginBottom': '5px'}),
+                            html.P('ln, lg, log, log2, exp, sqrt/root, abs', style={'margin': '0 0 10px 0'}),
+                            html.H6('Константы:', style={'color': '#e74c3c', 'marginBottom': '5px'}),
+                            html.P('pi/π, e, α, β, γ, δ, ε, μ, φ, π', style={'margin': '0 0 10px 0'}),
+                        ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                        
+                        html.Div([
+                            html.H6('Особенности ввода:', style={'color': '#e74c3c', 'marginBottom': '5px'}),
+                            html.P('• 2sinx → 2*sin(x) - умножение автоматическое', style={'margin': '0 0 5px 0'}),
+                            html.P('• sinx → sin(x) - скобки автоматические', style={'margin': '0 0 5px 0'}),
+                            html.P('• x^2 или x**2 - степень', style={'margin': '0 0 5px 0'}),
+                            html.P('• Регистр не важен - SiNx = sinx', style={'margin': '0 0 5px 0'}),
+                        ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                    ])
+                ], id='legend-content', style={'display': 'none', 'marginTop': '10px'}),
+            ], style={'padding': '15px', 'backgroundColor': '#f8f9fa', 'borderRadius': '8px', 'marginTop': '20px'}),
+        ]),
         
         html.Div([
             html.Button('Решить уравнение', id='solve-button', 
@@ -108,7 +159,6 @@ def create_input_panel():
                            'width': '200px'
                        }),
             
-            # Индикатор загрузки
             html.Div([
                 html.Div(id='loading-indicator', children=[
                     html.Div(style={

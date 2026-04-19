@@ -4,16 +4,129 @@ import plotly.graph_objs as go
 import numpy as np
 import time
 import json
+import uuid
 from dash import html
 import sys
 import os
 from functools import lru_cache
+from dash.dependencies import ALL
 
 # Добавляем родительскую директорию в путь для импорта
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from calculation_engine import solve_volterra_RK4, get_reference_solution, create_function_from_string
+from expression_parser import parse_user_input, format_for_display
 from .input_panel import KERNEL_EXAMPLES, RHS_EXAMPLES
+
+
+def _pattern_button_index(ctx):
+    """Индекс из pattern-matching кнопки ({type, index})."""
+    tid = getattr(ctx, 'triggered_id', None)
+    if isinstance(tid, dict) and 'index' in tid:
+        return tid['index']
+    if not ctx.triggered:
+        return None
+    raw = ctx.triggered[0]['prop_id'].rsplit('.', 1)[0]
+    try:
+        return json.loads(raw.replace("'", '"')).get('index')
+    except (json.JSONDecodeError, TypeError, ValueError, AttributeError):
+        return None
+
+
+def run_volterra_solution(kernel_expr, rhs_expr, N_points):
+    """
+    Полный расчёт и построение графиков (то же, что при нажатии «Решить»).
+    Возвращает (fig_solution, error_text, fig_error, fig_sections, fig_3d, fig_diff, computation_time).
+    """
+    start_time = time.time()
+    parsed_kernel = parse_user_input(kernel_expr, ['x', 't'])
+    parsed_rhs = parse_user_input(rhs_expr, ['x'])
+    K_current, f_current = get_cached_functions(parsed_kernel, parsed_rhs)
+    test_K = K_current(0.5, 0.5)
+    test_f = f_current(0.5)
+    del test_K, test_f
+
+    a = 0
+    b = 1
+    h = (b - a) / N_points
+    x = np.linspace(a, b, N_points + 1)
+
+    phi_numerical = solve_volterra_RK4(x, h, K_current, f_current)
+    phi_reference = get_reference_solution(x, K_current, f_current)
+    f_values = np.array([f_current(xi) for xi in x])
+
+    fig_solution = go.Figure()
+    fig_solution.add_trace(go.Scatter(x=x, y=phi_reference, mode='lines', name='Эталон',
+                                      line=dict(color='red', width=2)))
+    fig_solution.add_trace(go.Scatter(x=x, y=phi_numerical, mode='lines', name='Численное (RK4)',
+                                      line=dict(color='blue', dash='dash', width=1.5)))
+    fig_solution.update_layout(
+        title='Решение уравнения Вольтерры',
+        xaxis_title='x', yaxis_title='φ(x)', hovermode='x unified',
+        template='plotly_white', height=500)
+
+    error = np.abs(phi_numerical - phi_reference)
+    max_error = np.max(error)
+    error_text = f'📊 Максимальная ошибка: {max_error:.2e}'
+
+    fig_error = go.Figure()
+    fig_error.add_trace(go.Scatter(x=x, y=error, mode='lines', name='Абсолютная ошибка',
+                                   line=dict(color='green', width=2)))
+    fig_error.add_trace(go.Scatter(x=x, y=[max_error] * len(x), mode='lines',
+                                   name='Максимальная ошибка',
+                                   line=dict(color='red', dash='dash', width=1)))
+    yaxis_type = 'log' if np.all(error > 0) else 'linear'
+    fig_error.update_layout(
+        title='Абсолютная ошибка |φ_числ - φ_эталон|',
+        xaxis_title='x', yaxis_title='Ошибка', yaxis_type=yaxis_type,
+        hovermode='x unified', template='plotly_white', height=400)
+
+    t_values = [0, 0.25, 0.5, 0.75, 1.0]
+    colors = ['blue', 'green', 'red', 'orange', 'purple']
+    fig_kernel_sections = go.Figure()
+    for t_val, color in zip(t_values, colors):
+        K_section = [K_current(xi, t_val) for xi in x]
+        fig_kernel_sections.add_trace(go.Scatter(
+            x=x, y=K_section, mode='lines', name=f't = {t_val}', line=dict(color=color, width=2)))
+    fig_kernel_sections.update_layout(
+        title='Сечения ядра K(x,t) при фиксированных t',
+        xaxis_title='x', yaxis_title='K(x,t)', hovermode='x unified',
+        template='plotly_white', height=400)
+
+    n_points_3d = min(50, len(x))
+    X, T = np.meshgrid(x[:n_points_3d], x[:n_points_3d])
+    K_3d = np.zeros_like(X)
+    for i in range(len(X)):
+        for j in range(len(T)):
+            K_3d[i, j] = K_current(X[i, j], T[i, j])
+    fig_kernel_3d = go.Figure(data=[go.Surface(z=K_3d, x=X, y=T, colorscale='Viridis')])
+    fig_kernel_3d.update_layout(
+        title='3D поверхность ядра K(x,t)',
+        scene=dict(xaxis_title='x', yaxis_title='t', zaxis_title='K(x,t)'),
+        height=500)
+
+    fig_diff = go.Figure()
+    diff = phi_numerical - f_values
+    fig_diff.add_trace(go.Scatter(x=x, y=diff, mode='lines', name='φ(x) - f(x)',
+                                  line=dict(color='red', width=2), fill='tozeroy'))
+    fig_diff.add_trace(go.Scatter(x=x, y=diff, mode='lines', name='Интегральный член',
+                                  line=dict(color='blue', width=2, dash='dash')))
+    fig_diff.update_layout(
+        title='Разность φ(x) - f(x) (вклад интеграла)',
+        xaxis_title='x', yaxis_title='Значение', hovermode='x unified',
+        template='plotly_white', height=400)
+
+    computation_time = time.time() - start_time
+    return (
+        fig_solution,
+        error_text,
+        fig_error,
+        fig_kernel_sections,
+        fig_kernel_3d,
+        fig_diff,
+        computation_time,
+    )
+
 
 # Кэширование для функций ядра и правой части
 @lru_cache(maxsize=128)
@@ -23,111 +136,77 @@ def get_cached_functions(kernel_expr, rhs_expr):
     f_current = create_function_from_string(rhs_expr, ['x'])
     return K_current, f_current
 
-def analyze_solution(x, phi, K, f, error):
-    """Анализ решения и вычисление дополнительных характеристик"""
-    
-    # Основные статистики
-    max_value = np.max(phi)
-    min_value = np.min(phi)
-    mean_value = np.mean(phi)
-    std_value = np.std(phi)
-    
-    # Находим точку максимума
-    max_idx = np.argmax(phi)
-    max_x = x[max_idx]
-    
-    # Вычисляем интеграл от решения
+def format_equation_beautifully(kernel_expr, rhs_expr):
+    """Форматирует уравнение в красивом виде"""
     try:
-        integral = np.trapezoid(phi, x)
-    except AttributeError:
-        try:
-            integral = np.trapz(phi, x)
-        except AttributeError:
-            integral = np.sum((phi[:-1] + phi[1:]) / 2 * (x[1:] - x[:-1]))
-    
-    # Вычисляем производную
-    derivative = np.gradient(phi, x)
-    max_derivative = np.max(np.abs(derivative))
-    
-    # Проверка на наличие особенностей
-    has_oscillations = np.any(np.diff(np.signbit(derivative[:-1]))) if len(derivative) > 1 else False
-    
-    # Оценка сходимости
-    if np.max(error) < 1e-6:
-        convergence_status = "✅ Отличная"
-    elif np.max(error) < 1e-4:
-        convergence_status = "✅ Хорошая"
-    elif np.max(error) < 1e-2:
-        convergence_status = "⚠️ Средняя"
-    else:
-        convergence_status = "❌ Плохая"
-    
-    # Проверка начального условия
-    initial_condition_match = np.abs(phi[0]) < 1e-10
-    
-    # Поведение на конце интервала
-    if len(phi) > 1:
-        final_behavior = "Возрастает" if phi[-1] > phi[0] else "Убывает" if phi[-1] < phi[0] else "Стабильно"
-    else:
-        final_behavior = "Не определено"
-    
-    # Проверка на монотонность
-    if len(phi) > 1:
-        diff_phi = np.diff(phi)
-        is_monotonic = np.all(diff_phi >= 0) or np.all(diff_phi <= 0)
-        monotonicity = "Монотонная" if is_monotonic else "Немонотонная"
-    else:
-        monotonicity = "Не определено"
-    
-    return {
-        'max_value': max_value,
-        'min_value': min_value,
-        'mean_value': mean_value,
-        'std_value': std_value,
-        'max_x': max_x,
-        'integral': integral,
-        'max_derivative': max_derivative,
-        'has_oscillations': has_oscillations,
-        'convergence_status': convergence_status,
-        'initial_condition_match': initial_condition_match,
-        'final_behavior': final_behavior,
-        'monotonicity': monotonicity
-    }
-
-def check_existence_theorem(K, f, a=0, b=1):
-    """Проверка условий существования и единственности решения"""
-    try:
-        test_points = np.linspace(a, b, 10)
-        kernel_values = []
-        for xi in test_points:
-            for ti in test_points:
-                try:
-                    kernel_values.append(K(xi, ti))
-                except:
-                    return "❌ Ошибка при вычислении ядра"
+        # Парсим выражения
+        parsed_kernel = parse_user_input(kernel_expr, ['x', 't'])
+        parsed_rhs = parse_user_input(rhs_expr, ['x'])
         
-        kernel_finite = np.all(np.isfinite(kernel_values))
+        # Получаем отформатированные строки
+        kernel_display = format_for_display(parsed_kernel, is_kernel=True)
+        rhs_display = format_for_display(parsed_rhs, is_kernel=False)
         
-        rhs_values = []
-        for xi in test_points:
-            try:
-                rhs_values.append(f(xi))
-            except:
-                return "❌ Ошибка при вычислении правой части"
+        # Убираем префиксы
+        kernel_display = kernel_display.replace('K(x,t) = ', '')
+        rhs_display = rhs_display.replace('f(x) = ', '')
         
-        rhs_finite = np.all(np.isfinite(rhs_values))
+        # Заменяем exp на e^ для красоты
+        kernel_display = kernel_display.replace('exp', 'e')
+        rhs_display = rhs_display.replace('exp', 'e')
         
-        if kernel_finite and rhs_finite:
-            return "✅ Решение существует и единственно (ядро и правая часть непрерывны)"
-        elif kernel_finite and not rhs_finite:
-            return "⚠️ Проблемы с правой частью (неограниченные значения)"
-        elif not kernel_finite and rhs_finite:
-            return "⚠️ Проблемы с ядром (неограниченные значения)"
-        else:
-            return "❌ Нарушены условия существования решения"
+        # Форматируем степени
+        import re
+        kernel_display = re.sub(r'e\^\{([^}]+)\}', r'e^{\1}', kernel_display)
+        rhs_display = re.sub(r'e\^\{([^}]+)\}', r'e^{\1}', rhs_display)
+        
+        return html.Div([
+            # Основное уравнение в красивом формате
+            html.Div([
+                html.Span("φ(x) = ", style={'fontWeight': 'bold', 'fontSize': '1.3em', 'color': '#2c3e50'}),
+                html.Span(rhs_display, style={'color': '#27ae60', 'fontWeight': 'bold', 'fontSize': '1.3em'}),
+                html.Span(" + ", style={'fontWeight': 'bold', 'fontSize': '1.3em', 'color': '#2c3e50'}),
+                html.Span("∫₀ˣ ", style={'fontSize': '1.3em', 'color': '#2c3e50'}),
+                html.Span(kernel_display, style={'color': '#2980b9', 'fontWeight': 'bold', 'fontSize': '1.3em'}),
+                html.Span(" · φ(t) dt", style={'fontSize': '1.3em', 'color': '#2c3e50'}),
+            ], style={'marginBottom': '15px', 'fontFamily': 'monospace', 'textAlign': 'center'}),
+        ])
     except Exception as e:
-        return f"❌ Не удалось проверить условия: {str(e)}"
-
+        # Извлекаем только основное сообщение об ошибке
+        error_str = str(e)
+        
+        # Пытаемся извлечь только первую часть сообщения
+        if "Не удалось разобрать выражение" in error_str:
+            # Ищем шаблон 'Не удалось разобрать выражение '...''
+            import re
+            match = re.search(r"Не удалось разобрать выражение '([^']*)'", error_str)
+            if match:
+                expr_with_error = match.group(1)
+                # Показываем только выражение с ошибкой
+                error_message = f"Не удалось разобрать выражение '{expr_with_error}'"
+            else:
+                # Если не нашли по шаблону, берем первую строку
+                error_message = error_str.split('\n')[0]
+        else:
+            # Для других ошибок берем первую строку
+            error_message = error_str.split('\n')[0]
+        
+        # При ошибке показываем исходное выражение с кратким сообщением
+        return html.Div([
+            html.Div([
+                html.Span("φ(x) = ", style={'fontWeight': 'bold', 'fontSize': '1.2em'}),
+                html.Span(rhs_expr if rhs_expr else "f(x)", style={'color': '#27ae60', 'fontFamily': 'monospace'}),
+                html.Span(" + ∫₀ˣ ", style={'fontSize': '1.2em'}),
+                html.Span(kernel_expr if kernel_expr else "K(x,t)", style={'color': '#2980b9', 'fontFamily': 'monospace'}),
+                html.Span(" · φ(t) dt", style={'fontSize': '1.2em'}),
+            ], style={'marginBottom': '10px'}),
+            html.Div([
+                html.Span("⚠️ ", style={'color': '#f39c12', 'fontSize': '1.1em'}),
+                html.Span(error_message, style={'color': '#e74c3c', 'fontSize': '0.9em'})
+            ], style={'marginTop': '5px', 'padding': '8px', 'backgroundColor': '#fff3cd', 
+                     'borderRadius': '5px', 'borderLeft': '3px solid #f39c12'})
+        ])
+    
 def register_callbacks(app):
     """Регистрирует все callbacks приложения"""
     
@@ -135,8 +214,8 @@ def register_callbacks(app):
     @app.callback(
         [Output('kernel-input', 'value'),
          Output('rhs-input', 'value')],
-        [Input({'type': 'kernel-example', 'index': 'ALL'}, 'n_clicks'),
-         Input({'type': 'rhs-example', 'index': 'ALL'}, 'n_clicks')],
+        [Input({'type': 'kernel-example', 'index': ALL}, 'n_clicks'),
+         Input({'type': 'rhs-example', 'index': ALL}, 'n_clicks')],
         prevent_initial_call=True
     )
     def fill_example(kernel_clicks, rhs_clicks):
@@ -184,265 +263,124 @@ def register_callbacks(app):
         
         return True, loading_style, status_msg, status_style
     
+    # Callback для скрытия/показа легенды
+    @app.callback(
+        Output('legend-content', 'style'),
+        Input('legend-toggle', 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def toggle_legend(n_clicks):
+        if n_clicks is None:
+            return {'display': 'none', 'marginTop': '10px'}
+        
+        # При каждом клике переключаем видимость
+        return {'display': 'block', 'marginTop': '10px', 'animation': 'fadeIn 0.3s ease-in'}
+    
+    # Callback для отображения уравнения в реальном времени (с красивым форматированием)
+    @app.callback(
+        Output('equation-display', 'children'),
+        [Input('kernel-input', 'value'),
+         Input('rhs-input', 'value')]
+    )
+    def update_equation_display(kernel_expr, rhs_expr):
+        """Отображение уравнения в красивом виде"""
+        if not kernel_expr or not rhs_expr:
+            return html.Div([
+                html.Div("📝 Введите выражения для ядра K(x,t) и правой части f(x)", 
+                        style={'color': '#666', 'fontStyle': 'italic', 'textAlign': 'center'}),
+                html.Div("Пример: φ(x) = sin(x) + ∫₀ˣ 0.2·e^{-(x-t)}·φ(t) dt", 
+                        style={'fontSize': '0.9em', 'color': '#999', 'marginTop': '10px', 'textAlign': 'center'})
+            ])
+        
+        # Используем функцию красивого форматирования
+        return format_equation_beautifully(kernel_expr, rhs_expr)
+    
+    # Callback для валидации при потере фокуса
+    @app.callback(
+        [Output('error-message', 'children'),
+         Output('error-message', 'style')],
+        [Input('kernel-input', 'n_blur'),
+         Input('rhs-input', 'n_blur')],
+        [State('kernel-input', 'value'),
+         State('rhs-input', 'value')],
+        prevent_initial_call=True
+    )
+    def validate_on_blur(kernel_blur, rhs_blur, kernel_expr, rhs_expr):
+        """Валидация выражений при потере фокуса (только после завершения ввода)"""
+        ctx = callback_context
+        
+        if not ctx.triggered:
+            return "", {"display": "none"}
+        
+        triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        
+        # Проверяем только то поле, которое потеряло фокус
+        if triggered_id == 'kernel-input' and kernel_expr:
+            try:
+                parse_user_input(kernel_expr, ['x', 't'])
+                return "", {"display": "none"}
+            except Exception as e:
+                error_style = {
+                    'textAlign': 'center', 
+                    'color': '#e74c3c', 
+                    'fontSize': '0.9em', 
+                    'margin': '10px',
+                    'padding': '10px',
+                    'backgroundColor': '#fde8e8',
+                    'borderRadius': '5px',
+                    'borderLeft': '3px solid #e74c3c'
+                }
+                return f"⚠️ Ошибка в ядре K(x,t): {str(e)}", error_style
+                
+        elif triggered_id == 'rhs-input' and rhs_expr:
+            try:
+                parse_user_input(rhs_expr, ['x'])
+                return "", {"display": "none"}
+            except Exception as e:
+                error_style = {
+                    'textAlign': 'center', 
+                    'color': '#e74c3c', 
+                    'fontSize': '0.9em', 
+                    'margin': '10px',
+                    'padding': '10px',
+                    'backgroundColor': '#fde8e8',
+                    'borderRadius': '5px',
+                    'borderLeft': '3px solid #e74c3c'
+                }
+                return f"⚠️ Ошибка в правой части f(x): {str(e)}", error_style
+        
+        return "", {"display": "none"}
+    
     # Callback для решения уравнения (с дополнительными графиками)
     @app.callback(
         [Output('volterra-graph', 'figure'),
          Output('error-output', 'children'),
          Output('error-plot', 'figure'),
-         Output('error-message', 'children'),
-         Output('numerical-results', 'children'),
+         Output('error-message', 'children', allow_duplicate=True),
          Output('kernel-sections-plot', 'figure'),
          Output('kernel-3d-plot', 'figure'),
-         Output('kernel-contour-plot', 'figure'),
-         Output('f-vs-phi-plot', 'figure'),
-         Output('integral-contribution-plot', 'figure'),
          Output('difference-plot', 'figure'),
          Output('solve-button', 'disabled', allow_duplicate=True),
          Output('loading-indicator', 'style', allow_duplicate=True),
          Output('status-message', 'children', allow_duplicate=True),
-         Output('computation-time', 'data')],
+         Output('computation-time', 'data'),
+         Output('solutions-history', 'data', allow_duplicate=True)],
         [Input('solve-button', 'n_clicks')],
         [State('kernel-input', 'value'),
          State('rhs-input', 'value'),
-         State('n-slider', 'value')],
+         State('n-slider', 'value'),
+         State('solutions-history', 'data')],
         prevent_initial_call=True
     )
-    def update_graph(n_clicks, kernel_expr, rhs_expr, N_points):
+    def update_graph(n_clicks, kernel_expr, rhs_expr, N_points, history_data):
         if n_clicks is None:
             raise PreventUpdate
         
         start_time = time.time()
         
         try:
-            # Используем кэшированные функции
-            K_current, f_current = get_cached_functions(kernel_expr, rhs_expr)
-            
-            # Проверяем условия существования решения
-            existence_check = check_existence_theorem(K_current, f_current)
-            
-            # Проверяем, что функции работают
-            test_K = K_current(0.5, 0.5)
-            test_f = f_current(0.5)
-            
-            a = 0
-            b = 1
-            h = (b - a) / N_points
-            x = np.linspace(a, b, N_points + 1)
-            
-            # Решаем уравнение
-            phi_numerical = solve_volterra_RK4(x, h, K_current, f_current)
-            phi_reference = get_reference_solution(x, K_current, f_current)
-            
-            # Вычисляем правую часть f(x)
-            f_values = np.array([f_current(xi) for xi in x])
-            
-            # ПРАВИЛЬНЫЙ способ: интегральный член из уравнения
-            integral_term = phi_numerical - f_values
-            
-            # --- Анализ решения ---
-            error = np.abs(phi_numerical - phi_reference)
-            max_error = np.max(error)
-            
-            # Получаем характеристики решения
-            analysis = analyze_solution(x, phi_numerical, K_current, f_current, error)
-            
-            # --- 1. Основной график решения ---
-            fig_solution = go.Figure()
-            
-            fig_solution.add_trace(go.Scatter(x=x, y=phi_reference, mode='lines', name='Эталон',
-                                              line=dict(color='red', width=2)))
-            fig_solution.add_trace(go.Scatter(x=x, y=phi_numerical, mode='lines', name='Численное (RK4)',
-                                              line=dict(color='blue', dash='dash', width=1.5)))
-            
-            fig_solution.add_trace(go.Scatter(x=[analysis['max_x']], y=[analysis['max_value']], 
-                                             mode='markers', name=f'Максимум: {analysis["max_value"]:.4f}',
-                                             marker=dict(color='green', size=10, symbol='star')))
-            
-            fig_solution.update_layout(
-                title='Решение уравнения Вольтерры',
-                xaxis_title='x',
-                yaxis_title='φ(x)',
-                hovermode='x unified',
-                template='plotly_white',
-                height=500
-            )
-            
-            error_text = f'📊 Максимальная ошибка: {max_error:.2e} | Сходимость: {analysis["convergence_status"]}'
-            
-            # --- 2. График ошибки ---
-            fig_error = go.Figure()
-            fig_error.add_trace(go.Scatter(x=x, y=error, mode='lines', name='Абсолютная ошибка',
-                                           line=dict(color='green', width=2)))
-            fig_error.add_trace(go.Scatter(x=x, y=[max_error]*len(x), mode='lines', name='Максимальная ошибка',
-                                           line=dict(color='red', dash='dash', width=1)))
-            
-            yaxis_type = 'log' if np.all(error > 0) else 'linear'
-            
-            fig_error.update_layout(
-                title='Абсолютная ошибка |φ_числ - φ_эталон|',
-                xaxis_title='x',
-                yaxis_title='Ошибка',
-                yaxis_type=yaxis_type,
-                hovermode='x unified',
-                template='plotly_white',
-                height=400
-            )
-            
-            # --- 3. Сечения ядра при фиксированных t ---
-            t_values = [0, 0.25, 0.5, 0.75, 1.0]
-            colors = ['blue', 'green', 'red', 'orange', 'purple']
-            
-            fig_kernel_sections = go.Figure()
-            for t_val, color in zip(t_values, colors):
-                K_section = [K_current(xi, t_val) for xi in x]
-                fig_kernel_sections.add_trace(go.Scatter(
-                    x=x, y=K_section, mode='lines', 
-                    name=f't = {t_val}', line=dict(color=color, width=2)
-                ))
-            
-            fig_kernel_sections.update_layout(
-                title='Сечения ядра K(x,t) при фиксированных t',
-                xaxis_title='x',
-                yaxis_title='K(x,t)',
-                hovermode='x unified',
-                template='plotly_white',
-                height=400
-            )
-            
-            # --- 4. 3D поверхность ядра ---
-            # Используем меньше точек для ускорения
-            n_points_3d = min(50, len(x))
-            X, T = np.meshgrid(x[:n_points_3d], x[:n_points_3d])
-            K_3d = np.zeros_like(X)
-            for i in range(len(X)):
-                for j in range(len(T)):
-                    K_3d[i, j] = K_current(X[i, j], T[i, j])
-            
-            fig_kernel_3d = go.Figure(data=[go.Surface(z=K_3d, x=X, y=T, colorscale='Viridis')])
-            fig_kernel_3d.update_layout(
-                title='3D поверхность ядра K(x,t)',
-                scene=dict(
-                    xaxis_title='x',
-                    yaxis_title='t',
-                    zaxis_title='K(x,t)'
-                ),
-                height=500
-            )
-            
-            # --- 5. Контурный график ядра ---
-            fig_kernel_contour = go.Figure(data=go.Contour(
-                z=K_3d, x=x[:n_points_3d], y=x[:n_points_3d],
-                colorscale='Viridis', contours=dict(showlabels=True)
-            ))
-            fig_kernel_contour.update_layout(
-                title='Контурный график ядра K(x,t)',
-                xaxis_title='x',
-                yaxis_title='t',
-                height=500
-            )
-            
-            # --- 6. Сравнение f(x) и φ(x) ---
-            fig_f_vs_phi = go.Figure()
-            fig_f_vs_phi.add_trace(go.Scatter(x=x, y=f_values, mode='lines', name='f(x) (правая часть)',
-                                              line=dict(color='purple', width=2)))
-            fig_f_vs_phi.add_trace(go.Scatter(x=x, y=phi_numerical, mode='lines', name='φ(x) (решение)',
-                                              line=dict(color='blue', width=2)))
-            fig_f_vs_phi.update_layout(
-                title='Сравнение правой части f(x) и решения φ(x)',
-                xaxis_title='x',
-                yaxis_title='Значение',
-                hovermode='x unified',
-                template='plotly_white',
-                height=400
-            )
-            
-            # --- 7. Вклад интегрального члена ---
-            fig_contrib = go.Figure()
-            fig_contrib.add_trace(go.Scatter(x=x, y=f_values, mode='lines', name='f(x) (свободный член)',
-                                            line=dict(color='purple', width=2)))
-            fig_contrib.add_trace(go.Scatter(x=x, y=integral_term, mode='lines', name='∫K(x,t)φ(t)dt (интегральный член)',
-                                            line=dict(color='orange', width=2)))
-            fig_contrib.add_trace(go.Scatter(x=x, y=phi_numerical, mode='lines', name='φ(x) = f(x) + интеграл',
-                                            line=dict(color='blue', width=2, dash='dash')))
-            fig_contrib.update_layout(
-                title='Вклад интегрального члена vs свободный член',
-                xaxis_title='x',
-                yaxis_title='Значение',
-                hovermode='x unified',
-                template='plotly_white',
-                height=400
-            )
-            
-            # --- 8. Разность φ(x) - f(x) (вклад интеграла) ---
-            fig_diff = go.Figure()
-            diff = phi_numerical - f_values
-            fig_diff.add_trace(go.Scatter(x=x, y=diff, mode='lines', name='φ(x) - f(x)',
-                                         line=dict(color='red', width=2), fill='tozeroy'))
-            fig_diff.add_trace(go.Scatter(x=x, y=integral_term, mode='lines', name='Интегральный член',
-                                         line=dict(color='blue', width=2, dash='dash')))
-            fig_diff.update_layout(
-                title='Разность φ(x) - f(x) (должна равняться интегральному члену)',
-                xaxis_title='x',
-                yaxis_title='Значение',
-                hovermode='x unified',
-                template='plotly_white',
-                height=400
-            )
-            
-            # --- 9. Численные результаты в виде карточек ---
-            numerical_results = html.Div([
-                html.Div([
-                    html.Div([
-                        html.H4('📈 Экстремумы', style={'margin': '0 0 10px 0', 'color': '#2c3e50'}),
-                        html.P(f"Максимум: {analysis['max_value']:.6f} при x = {analysis['max_x']:.4f}", style={'margin': '5px 0'}),
-                        html.P(f"Минимум: {analysis['min_value']:.6f}", style={'margin': '5px 0'}),
-                        html.P(f"Размах: {analysis['max_value'] - analysis['min_value']:.6f}", style={'margin': '5px 0'}),
-                    ], style={'padding': '15px', 'backgroundColor': 'white', 'borderRadius': '8px', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'}),
-                    
-                    html.Div([
-                        html.H4('📊 Статистика', style={'margin': '0 0 10px 0', 'color': '#2c3e50'}),
-                        html.P(f"Среднее значение: {analysis['mean_value']:.6f}", style={'margin': '5px 0'}),
-                        html.P(f"Стандартное отклонение: {analysis['std_value']:.6f}", style={'margin': '5px 0'}),
-                        html.P(f"Интеграл: {analysis['integral']:.6f}", style={'margin': '5px 0'}),
-                    ], style={'padding': '15px', 'backgroundColor': 'white', 'borderRadius': '8px', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'}),
-                    
-                    html.Div([
-                        html.H4('🔄 Характеристики', style={'margin': '0 0 10px 0', 'color': '#2c3e50'}),
-                        html.P(f"Монотонность: {analysis['monotonicity']}", style={'margin': '5px 0'}),
-                        html.P(f"Поведение: {analysis['final_behavior']}", style={'margin': '5px 0'}),
-                        html.P(f"Макс. производная: {analysis['max_derivative']:.6f}", style={'margin': '5px 0'}),
-                    ], style={'padding': '15px', 'backgroundColor': 'white', 'borderRadius': '8px', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'}),
-                    
-                    html.Div([
-                        html.H4('✅ Проверка', style={'margin': '0 0 10px 0', 'color': '#2c3e50'}),
-                        html.P(f"Начальное условие: {'✅ Выполнено' if analysis['initial_condition_match'] else '❌ Нарушено'}", style={'margin': '5px 0'}),
-                        html.P(f"Осцилляции: {'❌ Есть' if analysis['has_oscillations'] else '✅ Нет'}", style={'margin': '5px 0'}),
-                        html.P(f"Сходимость: {analysis['convergence_status']}", style={'margin': '5px 0'}),
-                    ], style={'padding': '15px', 'backgroundColor': 'white', 'borderRadius': '8px', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'}),
-                ], style={'display': 'grid', 'gridTemplateColumns': 'repeat(auto-fit, minmax(250px, 1fr))', 'gap': '15px', 'marginBottom': '15px'}),
-                
-                html.Div([
-                    html.Div([
-                        html.H4('📐 Теорема существования и единственности', style={'margin': '0 0 10px 0', 'color': '#2c3e50'}),
-                        html.P(existence_check, style={'margin': '5px 0'}),
-                        html.P("Уравнение Вольтерры II рода имеет единственное решение, если ядро K(x,t) и правая часть f(x) непрерывны.", 
-                               style={'margin': '5px 0', 'fontSize': '0.9em', 'color': '#666'}),
-                    ], style={'padding': '15px', 'backgroundColor': 'white', 'borderRadius': '8px', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)', 'gridColumn': '1/-1'}),
-                ], style={'display': 'grid', 'gridTemplateColumns': '1fr', 'gap': '15px'}),
-                
-                # Диагностика: проверка что φ(x)-f(x) = интегральному члену
-                html.Div([
-                    html.H4('🔍 Проверка уравнения Вольтерры', style={'margin': '0 0 10px 0', 'color': '#27ae60'}),
-                    html.P("По определению уравнения: φ(x) = f(x) + ∫K(x,t)φ(t)dt", style={'margin': '5px 0'}),
-                    html.P("Следовательно: φ(x) - f(x) = ∫K(x,t)φ(t)dt", style={'margin': '5px 0'}),
-                    html.Div([
-                        html.Span("✅ Тождество выполняется автоматически! ", style={'color': '#27ae60', 'fontWeight': 'bold'}),
-                        html.Span("(используется точное соотношение, а не численное интегрирование)"),
-                    ], style={'margin': '10px 0', 'padding': '10px', 'backgroundColor': '#d5f4e6', 'borderRadius': '5px'}),
-                ], style={'padding': '15px', 'backgroundColor': '#f0fff4', 'borderRadius': '8px', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)', 'marginTop': '15px'}),
-            ])
-            
-            computation_time = time.time() - start_time
+            (fig_solution, error_text, fig_error, fig_kernel_sections, fig_kernel_3d, fig_diff,
+             computation_time) = run_volterra_solution(kernel_expr, rhs_expr, N_points)
             
             # Успешное завершение
             success_status = html.Div([
@@ -450,10 +388,40 @@ def register_callbacks(app):
                 html.Span(f"Время выполнения: {computation_time:.2f} секунд")
             ], style={'color': '#27ae60'})
             
-            return (fig_solution, error_text, fig_error, "", numerical_results,
-                    fig_kernel_sections, fig_kernel_3d, fig_kernel_contour,
-                    fig_f_vs_phi, fig_contrib, fig_diff,
-                    False, {'display': 'none'}, success_status, computation_time)
+            # Только текстовые поля — графики в sessionStorage не кладём (лимит ~5 МБ, иначе список «ломался»).
+            # Старые записи с main_figure / error_figure при следующем сохранении ужимаем до тех же полей.
+            hist = []
+            for r in (history_data if isinstance(history_data, list) else []):
+                if not isinstance(r, dict):
+                    continue
+                slim = {
+                    'id': r.get('id'),
+                    'timestamp': r.get('timestamp', ''),
+                    'date': r.get('date', ''),
+                    'kernel': r.get('kernel'),
+                    'rhs': r.get('rhs'),
+                    'n_points': r.get('n_points'),
+                    'computation_time': r.get('computation_time'),
+                }
+                if slim['id'] is None or slim['kernel'] is None or slim['rhs'] is None or slim['n_points'] is None:
+                    continue
+                hist.append(slim)
+            solution_record = {
+                'id': str(uuid.uuid4()),
+                'timestamp': time.strftime("%H:%M:%S"),
+                'date': time.strftime("%d.%m.%Y"),
+                'kernel': kernel_expr,
+                'rhs': rhs_expr,
+                'n_points': N_points,
+                'computation_time': computation_time,
+            }
+            new_history = [solution_record] + hist
+            new_history = new_history[:20]
+            
+            return (fig_solution, error_text, fig_error, "", 
+                    fig_kernel_sections, fig_kernel_3d, fig_diff,
+                    False, {'display': 'none'}, success_status, computation_time,
+                    new_history)
             
         except Exception as e:
             computation_time = time.time() - start_time
@@ -473,12 +441,192 @@ def register_callbacks(app):
             
             error_message = f"❌ Ошибка: {str(e)}"
             
-            # Пустые результаты
-            empty_results = html.Div([
-                html.P("Нет данных из-за ошибки", style={'color': 'red'}),
-                html.Pre(error_details, style={'fontSize': '0.8em', 'marginTop': '10px', 'overflowX': 'auto'})
-            ], style={'padding': '20px', 'textAlign': 'center'})
+            return (empty_fig, "Ошибка", empty_fig, error_message,
+                    empty_fig, empty_fig, empty_fig,
+                    False, {'display': 'none'}, error_status, computation_time,
+                    no_update)
+
+    # ==================== НОВЫЕ CALLBACK ДЛЯ ИСТОРИИ ====================
+    
+    # Callback для обновления списка истории
+    @app.callback(
+        Output('history-list', 'children'),
+        [Input('solutions-history', 'data'),
+         Input('clear-history-btn', 'n_clicks')],
+        prevent_initial_call=False
+    )
+    def update_history_list(history_data, clear_clicks):
+        """Обновляет отображение списка истории"""
+        ctx = callback_context
+        
+        # Если история очищена
+        if clear_clicks and ctx.triggered and 'clear-history-btn' in ctx.triggered[0]['prop_id']:
+            return html.Div("📭 История пуста. Решите уравнение, чтобы оно появилось здесь.", 
+                          style={'color': '#999', 'fontStyle': 'italic', 'textAlign': 'center', 'padding': '20px'})
+        
+        if not history_data or len(history_data) == 0:
+            return html.Div("📭 История пуста. Решите уравнение, чтобы оно появилось здесь.", 
+                          style={'color': '#999', 'fontStyle': 'italic', 'textAlign': 'center', 'padding': '20px'})
+        
+        # Создаем HTML для отображения истории
+        history_items = []
+        for record in history_data:
+            # Пропускаем некорректные записи
+            if not isinstance(record, dict) or 'id' not in record:
+                continue
+                
+            # Обрезаем длинные выражения для отображения
+            kernel_preview = record['kernel'][:60] + '...' if len(record['kernel']) > 60 else record['kernel']
+            rhs_preview = record['rhs'][:60] + '...' if len(record['rhs']) > 60 else record['rhs']
             
-            return (empty_fig, "Ошибка", empty_fig, error_message, empty_results,
-                    empty_fig, empty_fig, empty_fig, empty_fig, empty_fig, empty_fig,
-                    False, {'display': 'none'}, error_status, computation_time)
+            history_item = html.Div(
+                children=[
+                    html.Div(
+                        children=[
+                            html.Div(
+                                children=[
+                                    html.Span(f"🕐 {record['timestamp']} | {record['date']}", 
+                                             style={'fontWeight': 'bold', 'color': '#2c3e50', 'fontSize': '0.9em'}),
+                                    html.Span(f" | N={record['n_points']}", 
+                                             style={'color': '#7f8c8d', 'fontSize': '0.85em', 'marginLeft': '10px'}),
+                                ]
+                            ),
+                            html.Div(
+                                children=[
+                                    html.Small(f"K(x,t) = {kernel_preview}", 
+                                             style={'color': '#2980b9', 'fontFamily': 'monospace'}),
+                                    html.Br(),
+                                    html.Small(f"f(x) = {rhs_preview}", 
+                                             style={'color': '#27ae60', 'fontFamily': 'monospace'}),
+                                ], 
+                                style={'marginLeft': '15px', 'marginTop': '5px', 'marginBottom': '5px'}
+                            ),
+                            html.Div(
+                                children=[
+                                    html.Button("📊 Загрузить", 
+                                               id={'type': 'load-solution', 'index': record['id']},
+                                               style={'padding': '4px 12px', 'marginRight': '8px',
+                                                      'backgroundColor': '#3498db', 'color': 'white',
+                                                      'border': 'none', 'borderRadius': '3px',
+                                                      'cursor': 'pointer', 'fontSize': '12px'}),
+                                    html.Button("🗑️ Удалить", 
+                                               id={'type': 'delete-solution', 'index': record['id']},
+                                               style={'padding': '4px 12px',
+                                                      'backgroundColor': '#e74c3c', 'color': 'white',
+                                                      'border': 'none', 'borderRadius': '3px',
+                                                      'cursor': 'pointer', 'fontSize': '12px'}),
+                                ], 
+                                style={'marginTop': '8px', 'textAlign': 'right'}
+                            )
+                        ], 
+                        style={'padding': '10px', 'borderBottom': '1px solid #ddd',
+                               'marginBottom': '5px', 'borderRadius': '5px',
+                               'backgroundColor': 'white'}
+                    )
+                ],
+                id=f'history-item-{record["id"]}'
+            )
+            history_items.append(history_item)
+        
+        return history_items
+    
+    # Callback для загрузки решения из истории
+    @app.callback(
+        [Output('kernel-input', 'value', allow_duplicate=True),
+         Output('rhs-input', 'value', allow_duplicate=True),
+         Output('n-slider', 'value', allow_duplicate=True),
+         Output('volterra-graph', 'figure', allow_duplicate=True),
+         Output('error-plot', 'figure', allow_duplicate=True),
+         Output('kernel-sections-plot', 'figure', allow_duplicate=True),
+         Output('kernel-3d-plot', 'figure', allow_duplicate=True),
+         Output('difference-plot', 'figure', allow_duplicate=True),
+         Output('error-output', 'children', allow_duplicate=True),
+         Output('status-message', 'children', allow_duplicate=True),
+         Output('status-message', 'style', allow_duplicate=True)],
+        [Input({'type': 'load-solution', 'index': ALL}, 'n_clicks')],
+        [State('solutions-history', 'data')],
+        prevent_initial_call=True
+    )
+    def load_solution(load_clicks, history_data):
+        """Загружает сохраненное решение: подставляет K, f, N и пересчитывает графики."""
+        ctx = callback_context
+        if not ctx.triggered:
+            raise PreventUpdate
+        if ctx.triggered[0].get('value') is None:
+            raise PreventUpdate
+        if not history_data:
+            raise PreventUpdate
+        solution_id = _pattern_button_index(ctx)
+        if solution_id is None:
+            raise PreventUpdate
+        
+        for record in history_data:
+            if str(record.get('id')) != str(solution_id):
+                continue
+            if not all(k in record for k in ('kernel', 'rhs', 'n_points')):
+                continue
+            try:
+                (fig_solution, err_text, fig_error, fig_sec, fig_3d, fig_diff, _t) = run_volterra_solution(
+                    record['kernel'], record['rhs'], record['n_points']
+                )
+            except Exception as e:
+                status_msg = html.Div([
+                    html.Span("❌ Не удалось пересчитать: ", style={'fontWeight': 'bold'}),
+                    html.Span(str(e))
+                ], style={'color': '#e74c3c', 'textAlign': 'center', 'padding': '10px'})
+                return (
+                    no_update, no_update, no_update,
+                    no_update, no_update, no_update, no_update, no_update,
+                    no_update,
+                    status_msg,
+                    {'textAlign': 'center', 'margin': '10px'},
+                )
+            status_msg = html.Div([
+                html.Span("✅ Загружено из истории! ", style={'fontWeight': 'bold'}),
+                html.Span(f"Решение от {record.get('timestamp', '')} {record.get('date', '')}")
+            ], style={'color': '#27ae60', 'textAlign': 'center', 'padding': '10px'})
+            return (record['kernel'], record['rhs'], record['n_points'],
+                    fig_solution, fig_error, fig_sec, fig_3d, fig_diff, err_text,
+                    status_msg, {'textAlign': 'center', 'margin': '10px'})
+        
+        raise PreventUpdate
+    
+    # Callback для удаления решения из истории
+    @app.callback(
+        Output('solutions-history', 'data', allow_duplicate=True),
+        [Input({'type': 'delete-solution', 'index': ALL}, 'n_clicks')],
+        [State('solutions-history', 'data')],
+        prevent_initial_call=True
+    )
+    def delete_solution(delete_clicks, history_data):
+        """Удаляет решение из истории"""
+        ctx = callback_context
+        if not ctx.triggered:
+            raise PreventUpdate
+        if ctx.triggered[0].get('value') is None:
+            raise PreventUpdate
+        if not history_data:
+            raise PreventUpdate
+        solution_id = _pattern_button_index(ctx)
+        if solution_id is None:
+            raise PreventUpdate
+        
+        # Удаляем запись
+        new_history = [
+            record for record in history_data
+            if str(record.get('id')) != str(solution_id)
+        ]
+        
+        return new_history
+    
+    # Callback для очистки всей истории
+    @app.callback(
+        Output('solutions-history', 'data', allow_duplicate=True),
+        [Input('clear-history-btn', 'n_clicks')],
+        prevent_initial_call=True
+    )
+    def clear_all_history(clear_clicks):
+        """Очищает всю историю"""
+        if clear_clicks:
+            return []
+        raise PreventUpdate
