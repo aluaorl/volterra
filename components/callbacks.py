@@ -11,16 +11,13 @@ import os
 from functools import lru_cache
 from dash.dependencies import ALL
 
-# Добавляем родительскую директорию в путь для импорта
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from calculation_engine import solve_volterra_RK4, get_reference_solution, create_function_from_string
-from expression_parser import parse_user_input, format_for_display
+from expression_parser import parse_user_input, format_for_display, validate_expression_detailed
 from .input_panel import KERNEL_EXAMPLES, RHS_EXAMPLES
 
-
 def _pattern_button_index(ctx):
-    """Индекс из pattern-matching кнопки ({type, index})."""
     tid = getattr(ctx, 'triggered_id', None)
     if isinstance(tid, dict) and 'index' in tid:
         return tid['index']
@@ -32,19 +29,23 @@ def _pattern_button_index(ctx):
     except (json.JSONDecodeError, TypeError, ValueError, AttributeError):
         return None
 
-
 def run_volterra_solution(kernel_expr, rhs_expr, N_points):
-    """
-    Полный расчёт и построение графиков (то же, что при нажатии «Решить»).
-    Возвращает (fig_solution, error_text, fig_error, fig_sections, fig_3d, fig_diff, computation_time).
-    """
     start_time = time.time()
+    
+    if not kernel_expr or not kernel_expr.strip():
+        raise ValueError("Выражение для ядра K(x,t) не может быть пустым")
+    if not rhs_expr or not rhs_expr.strip():
+        raise ValueError("Выражение для правой части f(x) не может быть пустым")
+    
     parsed_kernel = parse_user_input(kernel_expr, ['x', 't'])
     parsed_rhs = parse_user_input(rhs_expr, ['x'])
     K_current, f_current = get_cached_functions(parsed_kernel, parsed_rhs)
-    test_K = K_current(0.5, 0.5)
-    test_f = f_current(0.5)
-    del test_K, test_f
+    
+    try:
+        test_K = K_current(0.5, 0.5)
+        test_f = f_current(0.5)
+    except Exception as e:
+        raise ValueError(f"{str(e)}")
 
     a = 0
     b = 1
@@ -127,41 +128,37 @@ def run_volterra_solution(kernel_expr, rhs_expr, N_points):
         computation_time,
     )
 
-
-# Кэширование для функций ядра и правой части
 @lru_cache(maxsize=128)
 def get_cached_functions(kernel_expr, rhs_expr):
-    """Кэширование созданных функций"""
     K_current = create_function_from_string(kernel_expr, ['x', 't'])
     f_current = create_function_from_string(rhs_expr, ['x'])
     return K_current, f_current
 
 def format_equation_beautifully(kernel_expr, rhs_expr):
-    """Форматирует уравнение в красивом виде"""
+    if not kernel_expr or not rhs_expr:
+        return html.Div([
+            html.Div("📝 Введите выражения для ядра K(x,t) и правой части f(x)", 
+                    style={'color': '#666', 'fontStyle': 'italic', 'textAlign': 'center'})
+        ])
+    
     try:
-        # Парсим выражения
         parsed_kernel = parse_user_input(kernel_expr, ['x', 't'])
         parsed_rhs = parse_user_input(rhs_expr, ['x'])
         
-        # Получаем отформатированные строки
         kernel_display = format_for_display(parsed_kernel, is_kernel=True)
         rhs_display = format_for_display(parsed_rhs, is_kernel=False)
         
-        # Убираем префиксы
         kernel_display = kernel_display.replace('K(x,t) = ', '')
         rhs_display = rhs_display.replace('f(x) = ', '')
         
-        # Заменяем exp на e^ для красоты
         kernel_display = kernel_display.replace('exp', 'e')
         rhs_display = rhs_display.replace('exp', 'e')
         
-        # Форматируем степени
         import re
         kernel_display = re.sub(r'e\^\{([^}]+)\}', r'e^{\1}', kernel_display)
         rhs_display = re.sub(r'e\^\{([^}]+)\}', r'e^{\1}', rhs_display)
         
         return html.Div([
-            # Основное уравнение в красивом формате
             html.Div([
                 html.Span("φ(x) = ", style={'fontWeight': 'bold', 'fontSize': '1.3em', 'color': '#2c3e50'}),
                 html.Span(rhs_display, style={'color': '#27ae60', 'fontWeight': 'bold', 'fontSize': '1.3em'}),
@@ -172,45 +169,25 @@ def format_equation_beautifully(kernel_expr, rhs_expr):
             ], style={'marginBottom': '15px', 'fontFamily': 'monospace', 'textAlign': 'center'}),
         ])
     except Exception as e:
-        # Извлекаем только основное сообщение об ошибке
-        error_str = str(e)
-        
-        # Пытаемся извлечь только первую часть сообщения
-        if "Не удалось разобрать выражение" in error_str:
-            # Ищем шаблон 'Не удалось разобрать выражение '...''
-            import re
-            match = re.search(r"Не удалось разобрать выражение '([^']*)'", error_str)
-            if match:
-                expr_with_error = match.group(1)
-                # Показываем только выражение с ошибкой
-                error_message = f"Не удалось разобрать выражение '{expr_with_error}'"
-            else:
-                # Если не нашли по шаблону, берем первую строку
-                error_message = error_str.split('\n')[0]
-        else:
-            # Для других ошибок берем первую строку
-            error_message = error_str.split('\n')[0]
-        
-        # При ошибке показываем исходное выражение с кратким сообщением
+        error_msg = str(e)
         return html.Div([
             html.Div([
                 html.Span("φ(x) = ", style={'fontWeight': 'bold', 'fontSize': '1.2em'}),
-                html.Span(rhs_expr if rhs_expr else "f(x)", style={'color': '#27ae60', 'fontFamily': 'monospace'}),
+                html.Span(rhs_expr, style={'color': '#27ae60', 'fontFamily': 'monospace'}),
                 html.Span(" + ∫₀ˣ ", style={'fontSize': '1.2em'}),
-                html.Span(kernel_expr if kernel_expr else "K(x,t)", style={'color': '#2980b9', 'fontFamily': 'monospace'}),
+                html.Span(kernel_expr, style={'color': '#2980b9', 'fontFamily': 'monospace'}),
                 html.Span(" · φ(t) dt", style={'fontSize': '1.2em'}),
             ], style={'marginBottom': '10px'}),
             html.Div([
                 html.Span("⚠️ ", style={'color': '#f39c12', 'fontSize': '1.1em'}),
-                html.Span(error_message, style={'color': '#e74c3c', 'fontSize': '0.9em'})
+                html.Span(f"Некорректное выражение: {error_msg}", 
+                         style={'color': '#e74c3c', 'fontSize': '0.9em'})
             ], style={'marginTop': '5px', 'padding': '8px', 'backgroundColor': '#fff3cd', 
                      'borderRadius': '5px', 'borderLeft': '3px solid #f39c12'})
         ])
     
 def register_callbacks(app):
-    """Регистрирует все callbacks приложения"""
     
-    # Callback для заполнения примеров
     @app.callback(
         [Output('kernel-input', 'value'),
          Output('rhs-input', 'value')],
@@ -233,7 +210,6 @@ def register_callbacks(app):
             example_name = list(RHS_EXAMPLES.keys())[triggered_dict['index']]
             return no_update, RHS_EXAMPLES[example_name]
     
-    # Callback для управления индикатором загрузки
     @app.callback(
         [Output('solve-button', 'disabled'),
          Output('loading-indicator', 'style'),
@@ -263,7 +239,6 @@ def register_callbacks(app):
         
         return True, loading_style, status_msg, status_style
     
-    # Callback для скрытия/показа легенды
     @app.callback(
         Output('legend-content', 'style'),
         Input('legend-toggle', 'n_clicks'),
@@ -272,18 +247,14 @@ def register_callbacks(app):
     def toggle_legend(n_clicks):
         if n_clicks is None:
             return {'display': 'none', 'marginTop': '10px'}
-        
-        # При каждом клике переключаем видимость
         return {'display': 'block', 'marginTop': '10px', 'animation': 'fadeIn 0.3s ease-in'}
     
-    # Callback для отображения уравнения в реальном времени (с красивым форматированием)
     @app.callback(
         Output('equation-display', 'children'),
         [Input('kernel-input', 'value'),
          Input('rhs-input', 'value')]
     )
     def update_equation_display(kernel_expr, rhs_expr):
-        """Отображение уравнения в красивом виде"""
         if not kernel_expr or not rhs_expr:
             return html.Div([
                 html.Div("📝 Введите выражения для ядра K(x,t) и правой части f(x)", 
@@ -291,9 +262,47 @@ def register_callbacks(app):
                 html.Div("Пример: φ(x) = sin(x) + ∫₀ˣ 0.2·e^{-(x-t)}·φ(t) dt", 
                         style={'fontSize': '0.9em', 'color': '#999', 'marginTop': '10px', 'textAlign': 'center'})
             ])
-        
-        # Используем функцию красивого форматирования
         return format_equation_beautifully(kernel_expr, rhs_expr)
+    
+    # Валидация при вводе (реального времени)
+    @app.callback(
+        [Output('kernel-validation', 'children'),
+         Output('kernel-validation', 'style'),
+         Output('rhs-validation', 'children'),
+         Output('rhs-validation', 'style'),
+         Output('solve-button', 'disabled', allow_duplicate=True)],
+        [Input('kernel-input', 'value'),
+         Input('rhs-input', 'value')],
+        prevent_initial_call='initial_duplicate'
+    )
+    def validate_inputs_realtime(kernel_expr, rhs_expr):
+        """Валидация в реальном времени при вводе"""
+        kernel_valid = True
+        rhs_valid = True
+        kernel_msg = ""
+        rhs_msg = ""
+        
+        # Проверка ядра
+        if kernel_expr and kernel_expr.strip():
+            valid, msg = validate_expression_detailed(kernel_expr, ['x', 't'])
+            if not valid:
+                kernel_valid = False
+                kernel_msg = f"⚠️ {msg}"
+        
+        # Проверка правой части
+        if rhs_expr and rhs_expr.strip():
+            valid, msg = validate_expression_detailed(rhs_expr, ['x'])
+            if not valid:
+                rhs_valid = False
+                rhs_msg = f"⚠️ {msg}"
+        
+        kernel_style = {'color': '#e74c3c', 'fontSize': '0.85em', 'marginTop': '5px'} if kernel_msg else {'display': 'none'}
+        rhs_style = {'color': '#e74c3c', 'fontSize': '0.85em', 'marginTop': '5px'} if rhs_msg else {'display': 'none'}
+        
+        # Блокируем кнопку, если есть ошибки или поля пустые
+        button_disabled = not (kernel_expr and rhs_expr and kernel_valid and rhs_valid)
+        
+        return kernel_msg, kernel_style, rhs_msg, rhs_style, button_disabled
     
     # Callback для валидации при потере фокуса
     @app.callback(
@@ -306,7 +315,6 @@ def register_callbacks(app):
         prevent_initial_call=True
     )
     def validate_on_blur(kernel_blur, rhs_blur, kernel_expr, rhs_expr):
-        """Валидация выражений при потере фокуса (только после завершения ввода)"""
         ctx = callback_context
         
         if not ctx.triggered:
@@ -314,12 +322,9 @@ def register_callbacks(app):
         
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
         
-        # Проверяем только то поле, которое потеряло фокус
         if triggered_id == 'kernel-input' and kernel_expr:
-            try:
-                parse_user_input(kernel_expr, ['x', 't'])
-                return "", {"display": "none"}
-            except Exception as e:
+            valid, msg = validate_expression_detailed(kernel_expr, ['x', 't'])
+            if not valid:
                 error_style = {
                     'textAlign': 'center', 
                     'color': '#e74c3c', 
@@ -330,13 +335,11 @@ def register_callbacks(app):
                     'borderRadius': '5px',
                     'borderLeft': '3px solid #e74c3c'
                 }
-                return f"⚠️ Ошибка в ядре K(x,t): {str(e)}", error_style
+                return f"❌ Ошибка в ядре K(x,t): {msg}", error_style
                 
         elif triggered_id == 'rhs-input' and rhs_expr:
-            try:
-                parse_user_input(rhs_expr, ['x'])
-                return "", {"display": "none"}
-            except Exception as e:
+            valid, msg = validate_expression_detailed(rhs_expr, ['x'])
+            if not valid:
                 error_style = {
                     'textAlign': 'center', 
                     'color': '#e74c3c', 
@@ -347,11 +350,11 @@ def register_callbacks(app):
                     'borderRadius': '5px',
                     'borderLeft': '3px solid #e74c3c'
                 }
-                return f"⚠️ Ошибка в правой части f(x): {str(e)}", error_style
+                return f"❌ Ошибка в правой части f(x): {msg}", error_style
         
         return "", {"display": "none"}
     
-    # Callback для решения уравнения (с дополнительными графиками)
+    # Callback для решения уравнения
     @app.callback(
         [Output('volterra-graph', 'figure'),
          Output('error-output', 'children'),
@@ -370,26 +373,52 @@ def register_callbacks(app):
          State('rhs-input', 'value'),
          State('n-slider', 'value'),
          State('solutions-history', 'data')],
-        prevent_initial_call=True
+        prevent_initial_call='initial_duplicate'
     )
     def update_graph(n_clicks, kernel_expr, rhs_expr, N_points, history_data):
         if n_clicks is None:
             raise PreventUpdate
         
-        start_time = time.time()
+        # Дополнительная проверка перед вычислением
+        if kernel_expr and rhs_expr:
+            kernel_valid, kernel_msg = validate_expression_detailed(kernel_expr, ['x', 't'])
+            rhs_valid, rhs_msg = validate_expression_detailed(rhs_expr, ['x'])
+            
+            if not kernel_valid:
+                error_status = html.Div([
+                    html.Span("❌ Ошибка! ", style={'fontWeight': 'bold'}),
+                    html.Div(kernel_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
+                ], style={'color': '#e74c3c'})
+                
+                empty_fig = go.Figure()
+                empty_fig.update_layout(title='Ошибка вычислений', template='plotly_white')
+                
+                return (empty_fig, "❌ Ошибка вычислений", empty_fig, f"❌ {kernel_msg}",
+                        empty_fig, empty_fig, empty_fig,
+                        False, {'display': 'none'}, error_status, 0, no_update)
+            
+            if not rhs_valid:
+                error_status = html.Div([
+                    html.Span("❌ Ошибка! ", style={'fontWeight': 'bold'}),
+                    html.Div(rhs_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
+                ], style={'color': '#e74c3c'})
+                
+                empty_fig = go.Figure()
+                empty_fig.update_layout(title='Ошибка вычислений', template='plotly_white')
+                
+                return (empty_fig, "❌ Ошибка вычислений", empty_fig, f"❌ {rhs_msg}",
+                        empty_fig, empty_fig, empty_fig,
+                        False, {'display': 'none'}, error_status, 0, no_update)
         
         try:
             (fig_solution, error_text, fig_error, fig_kernel_sections, fig_kernel_3d, fig_diff,
              computation_time) = run_volterra_solution(kernel_expr, rhs_expr, N_points)
             
-            # Успешное завершение
             success_status = html.Div([
                 html.Span("✅ Вычисление успешно завершено! ", style={'fontWeight': 'bold'}),
                 html.Span(f"Время выполнения: {computation_time:.2f} секунд")
             ], style={'color': '#27ae60'})
             
-            # Только текстовые поля — графики в sessionStorage не кладём (лимит ~5 МБ, иначе список «ломался»).
-            # Старые записи с main_figure / error_figure при следующем сохранении ужимаем до тех же полей.
             hist = []
             for r in (history_data if isinstance(history_data, list) else []):
                 if not isinstance(r, dict):
@@ -424,30 +453,28 @@ def register_callbacks(app):
                     new_history)
             
         except Exception as e:
-            computation_time = time.time() - start_time
-            import traceback
-            error_details = traceback.format_exc()
+            error_msg = str(e)
+            # Очищаем сообщение от лишних префиксов
+            if "Ошибка при вычислении функции:" in error_msg:
+                error_msg = error_msg.split("Ошибка при вычислении функции:")[-1].strip()
+            elif "Ошибка при вычислении на шаге" in error_msg:
+                parts = error_msg.split(":")
+                if len(parts) > 1:
+                    error_msg = parts[-1].strip()
             
-            # Ошибка
+            # Одно понятное сообщение об ошибке
             error_status = html.Div([
                 html.Span("❌ Ошибка! ", style={'fontWeight': 'bold'}),
-                html.Span(f"Время до ошибки: {computation_time:.2f} секунд"),
-                html.Pre(str(e), style={'fontSize': '0.8em', 'marginTop': '10px', 'color': '#c0392b'})
+                html.Div(error_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
             ], style={'color': '#e74c3c'})
             
-            # Пустые графики
             empty_fig = go.Figure()
             empty_fig.update_layout(title='Ошибка вычислений', template='plotly_white')
             
-            error_message = f"❌ Ошибка: {str(e)}"
-            
-            return (empty_fig, "Ошибка", empty_fig, error_message,
+            return (empty_fig, "❌ Ошибка вычислений", empty_fig, f"❌ {error_msg}",
                     empty_fig, empty_fig, empty_fig,
-                    False, {'display': 'none'}, error_status, computation_time,
-                    no_update)
+                    False, {'display': 'none'}, error_status, 0, no_update)
 
-    # ==================== НОВЫЕ CALLBACK ДЛЯ ИСТОРИИ ====================
-    
     # Callback для обновления списка истории
     @app.callback(
         Output('history-list', 'children'),
@@ -456,10 +483,8 @@ def register_callbacks(app):
         prevent_initial_call=False
     )
     def update_history_list(history_data, clear_clicks):
-        """Обновляет отображение списка истории"""
         ctx = callback_context
         
-        # Если история очищена
         if clear_clicks and ctx.triggered and 'clear-history-btn' in ctx.triggered[0]['prop_id']:
             return html.Div("📭 История пуста. Решите уравнение, чтобы оно появилось здесь.", 
                           style={'color': '#999', 'fontStyle': 'italic', 'textAlign': 'center', 'padding': '20px'})
@@ -468,14 +493,11 @@ def register_callbacks(app):
             return html.Div("📭 История пуста. Решите уравнение, чтобы оно появилось здесь.", 
                           style={'color': '#999', 'fontStyle': 'italic', 'textAlign': 'center', 'padding': '20px'})
         
-        # Создаем HTML для отображения истории
         history_items = []
         for record in history_data:
-            # Пропускаем некорректные записи
             if not isinstance(record, dict) or 'id' not in record:
                 continue
                 
-            # Обрезаем длинные выражения для отображения
             kernel_preview = record['kernel'][:60] + '...' if len(record['kernel']) > 60 else record['kernel']
             rhs_preview = record['rhs'][:60] + '...' if len(record['rhs']) > 60 else record['rhs']
             
@@ -545,10 +567,9 @@ def register_callbacks(app):
          Output('status-message', 'style', allow_duplicate=True)],
         [Input({'type': 'load-solution', 'index': ALL}, 'n_clicks')],
         [State('solutions-history', 'data')],
-        prevent_initial_call=True
+        prevent_initial_call='initial_duplicate'
     )
     def load_solution(load_clicks, history_data):
-        """Загружает сохраненное решение: подставляет K, f, N и пересчитывает графики."""
         ctx = callback_context
         if not ctx.triggered:
             raise PreventUpdate
@@ -570,9 +591,18 @@ def register_callbacks(app):
                     record['kernel'], record['rhs'], record['n_points']
                 )
             except Exception as e:
+                error_msg = str(e)
+                # Очищаем сообщение от лишних префиксов
+                if "Ошибка при вычислении функции:" in error_msg:
+                    error_msg = error_msg.split("Ошибка при вычислении функции:")[-1].strip()
+                elif "Ошибка при вычислении на шаге" in error_msg:
+                    parts = error_msg.split(":")
+                    if len(parts) > 1:
+                        error_msg = parts[-1].strip()
+                
                 status_msg = html.Div([
-                    html.Span("❌ Не удалось пересчитать: ", style={'fontWeight': 'bold'}),
-                    html.Span(str(e))
+                    html.Span("❌ Ошибка! ", style={'fontWeight': 'bold'}),
+                    html.Div(error_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
                 ], style={'color': '#e74c3c', 'textAlign': 'center', 'padding': '10px'})
                 return (
                     no_update, no_update, no_update,
@@ -596,10 +626,9 @@ def register_callbacks(app):
         Output('solutions-history', 'data', allow_duplicate=True),
         [Input({'type': 'delete-solution', 'index': ALL}, 'n_clicks')],
         [State('solutions-history', 'data')],
-        prevent_initial_call=True
+        prevent_initial_call='initial_duplicate'
     )
     def delete_solution(delete_clicks, history_data):
-        """Удаляет решение из истории"""
         ctx = callback_context
         if not ctx.triggered:
             raise PreventUpdate
@@ -611,7 +640,6 @@ def register_callbacks(app):
         if solution_id is None:
             raise PreventUpdate
         
-        # Удаляем запись
         new_history = [
             record for record in history_data
             if str(record.get('id')) != str(solution_id)
@@ -626,7 +654,6 @@ def register_callbacks(app):
         prevent_initial_call=True
     )
     def clear_all_history(clear_clicks):
-        """Очищает всю историю"""
         if clear_clicks:
             return []
         raise PreventUpdate

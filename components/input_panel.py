@@ -38,6 +38,7 @@ def create_input_panel():
                         'border': '2px solid #bdc3c7'
                     }
                 ),
+                html.Div(id='kernel-validation', style={'color': '#e74c3c', 'fontSize': '0.85em', 'marginTop': '5px'}),
                 html.Div([
                     html.Span('Примеры: ', style={'fontWeight': 'bold', 'marginRight': '10px'}),
                     html.Div([
@@ -68,6 +69,7 @@ def create_input_panel():
                         'border': '2px solid #bdc3c7'
                     }
                 ),
+                html.Div(id='rhs-validation', style={'color': '#e74c3c', 'fontSize': '0.85em', 'marginTop': '5px'}),
                 html.Div([
                     html.Span('Примеры: ', style={'fontWeight': 'bold', 'marginRight': '10px'}),
                     html.Div([
