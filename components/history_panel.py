@@ -3,19 +3,24 @@ from dash import html, dcc
 def create_history_panel():
     """Создает панель истории решений с модальным окном"""
     return html.Div([
-        # Кнопка-иконка для открытия истории
+        # Кнопка-иконка для открытия истории (теперь с картинкой)
         html.Div(
             html.Div(
-                "📋",
+                html.Img(
+                    src='/assets/history-icon.png',  # путь к вашей иконке
+                    style={
+                        'width': '32px',
+                        'height': '32px',
+                        'display': 'block'
+                    }
+                ),
                 id='history-toggle-btn',
                 style={
                     'position': 'fixed',
                     'top': '20px',
                     'right': '20px',
-                    'fontSize': '32px',
                     'cursor': 'pointer',
-                    'backgroundColor': '#3498db',
-                    'color': 'white',
+                    'backgroundColor': 'transparent',  # убираем голубой фон
                     'width': '50px',
                     'height': '50px',
                     'borderRadius': '50%',
@@ -24,7 +29,8 @@ def create_history_panel():
                     'justifyContent': 'center',
                     'boxShadow': '0 4px 12px rgba(0,0,0,0.15)',
                     'transition': 'transform 0.2s ease',
-                    'zIndex': '999'
+                    'zIndex': '999',
+                    'background': 'white'  # белый фон вместо голубого
                 },
                 title="История решений"
             ),
@@ -39,7 +45,7 @@ def create_history_panel():
                     children=[
                         html.Div(
                             children=[
-                                html.H3("📚 История решений", style={'margin': '0', 'color': '#1a5276'}),
+                                html.H3("История решений", style={'margin': '0', 'color': '#1a5276'}),
                                 html.Span(
                                     "✕",
                                     id='close-history-modal',
@@ -71,22 +77,49 @@ def create_history_panel():
                             }
                         ),
                         html.Div(
-                            html.Button(
-                                "Очистить всю историю",
-                                id='clear-history-btn',
-                                style={
-                                    'padding': '10px 20px',
-                                    'backgroundColor': '#e74c3c',
-                                    'color': 'white',
-                                    'border': 'none',
-                                    'borderRadius': '5px',
-                                    'cursor': 'pointer',
-                                    'fontSize': '14px',
-                                    'margin': '15px auto',
-                                    'display': 'block',
-                                    'width': '200px'
-                                }
-                            ),
+                            [
+                                html.Button(
+                                    "Очистить Историю",
+                                    id='clear-history-btn',
+                                    style={
+                                        'padding': '10px 20px',
+                                        'backgroundColor': '#e74c3c',
+                                        'color': 'white',
+                                        'border': 'none',
+                                        'borderRadius': '5px',
+                                        'cursor': 'pointer',
+                                        'fontSize': '14px',
+                                        'margin': '15px auto',
+                                        'display': 'block',
+                                        'width': '150px'
+                                    }
+                                ),
+                                # Блок с авторским правом
+                                html.Div(
+                                    [
+                                        html.Span("Иконка истории: ", style={'fontSize': '11px', 'color': '#999'}),
+                                        html.A(
+                                            "назад часы истории отчет значок",
+                                            href="https://icon-icons.com/ru/authors/770-perpixel",
+                                            target="_blank",
+                                            style={'fontSize': '11px', 'color': '#999', 'textDecoration': 'none'}
+                                        ),
+                                        html.Span(" by Perpixel on ", style={'fontSize': '11px', 'color': '#999'}),
+                                        html.A(
+                                            "Icon-Icons.com",
+                                            href="https://icon-icons.com/ru/authors/770-perpixel",
+                                            target="_blank",
+                                            style={'fontSize': '11px', 'color': '#999', 'textDecoration': 'none'}
+                                        )
+                                    ],
+                                    style={
+                                        'textAlign': 'center',
+                                        'padding': '10px',
+                                        'borderTop': '1px solid #e0e0e0',
+                                        'marginTop': '10px'
+                                    }
+                                )
+                            ],
                             style={'borderTop': '1px solid #ddd', 'padding': '15px'}
                         )
                     ],

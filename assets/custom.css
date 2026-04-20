@@ -1,3 +1,6 @@
+/* Подключение шрифта Ubuntu */
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+
 * {
     margin: 0;
     padding: 0;
@@ -5,16 +8,19 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Ubuntu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 20px;
     background-color: #f0f2f5;
     color: #333;
 }
 
 h1 {
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+    font-weight: 700;
     color: #1a5276;
     margin-bottom: 30px;
     font-size: 2.2em;
+    letter-spacing: -0.5px;
 }
 
 .dash-dropdown, .dash-slider {
@@ -24,6 +30,7 @@ h1 {
 
 /* Стили для числового поля ввода N */
 input[type="number"] {
+    font-family: 'Ubuntu', monospace;
     border: 2px solid #a8d5e8 !important;
     border-radius: 5px !important;
     background-color: white !important;
@@ -38,6 +45,7 @@ input[type="number"]:focus {
 
 /* Стили для textarea */
 textarea {
+    font-family: 'Ubuntu', monospace;
     transition: all 0.3s ease;
 }
 
@@ -68,7 +76,8 @@ textarea:focus {
 }
 
 label {
-    font-weight: bold;
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+    font-weight: 600;
     margin-bottom: 8px;
     display: block;
     color: #555;
@@ -103,6 +112,8 @@ button:disabled:hover {
 #legend-toggle {
     cursor: pointer;
     user-select: none;
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+    font-weight: 600;
 }
 
 #legend-toggle:hover {
@@ -164,6 +175,8 @@ button:active {
 
 /* Блок отображения уравнения */
 #equation-display {
+    font-family: 'Ubuntu', monospace;
+    font-weight: 500;
     background-color: #e8eef2 !important;
     border: 2px solid #a8d5e8 !important;
 }
@@ -203,4 +216,129 @@ button[id*="example"]:hover {
 #close-history-modal:hover {
     transform: scale(1.2);
     color: #c0392b;
+}
+
+/* Дополнительные стили для улучшения читаемости с Ubuntu */
+h3, h4, h5, h6 {
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+    font-weight: 600;
+}
+
+.dash-dropdown {
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+}
+
+/* Стиль для выпадающих списков примеров */
+#kernel-examples-toggle, #rhs-examples-toggle {
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+    font-weight: 500;
+}
+
+/* Стиль для кнопок примеров */
+button[id*="example"] {
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+    font-weight: 500;
+}
+
+/* Стиль для статусных сообщений */
+#status-message {
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+}
+
+/* Стиль для сообщений об ошибках */
+#error-message {
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+}
+
+/* Стиль для блоков с примерами */
+#kernel-examples-content button, 
+#rhs-examples-content button {
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+    font-size: 13px;
+}
+
+/* Улучшение читаемости в полях ввода */
+input, textarea, .Select-value, .Select-placeholder {
+    font-family: 'Ubuntu', monospace;
+    font-size: 13px;
+}
+
+/* Дополнительные стили для современного вида с Ubuntu */
+button:not(:disabled) {
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.Select-control, .Select-menu-outer {
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+}
+
+/* Стиль для заголовков графиков */
+.gtitle, .xtitle, .ytitle {
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif !important;
+}
+
+/* Стили для кнопки истории с иконкой */
+#history-toggle-btn {
+    transition: all 0.3s ease;
+    background: white !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+#history-toggle-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    background: white !important;
+}
+
+#history-toggle-btn img {
+    transition: transform 0.2s ease;
+}
+
+#history-toggle-btn:hover img {
+    transform: scale(1.05);
+}
+
+/* Стиль для блока авторского права */
+.history-credits {
+    font-size: 10px;
+    color: #999;
+    text-align: center;
+    padding: 8px;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 10px;
+}
+
+.history-credits a {
+    color: #999;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.history-credits a:hover {
+    color: #3498db;
+    text-decoration: underline;
+}
+
+/* Стили для кнопок с иконками в истории */
+[id*="load-solution"], [id*="delete-solution"] {
+    transition: all 0.2s ease;
+}
+
+[id*="load-solution"]:hover, [id*="delete-solution"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+[id*="load-solution"]:active, [id*="delete-solution"]:active {
+    transform: scale(0.95);
+}
+
+[id*="load-solution"] img, [id*="delete-solution"] img {
+    transition: transform 0.2s ease;
+}
+
+[id*="load-solution"]:hover img, [id*="delete-solution"]:hover img {
+    transform: scale(1.1);
 }

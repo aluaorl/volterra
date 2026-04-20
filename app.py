@@ -10,13 +10,10 @@ app = dash.Dash(__name__, external_stylesheets=['/assets/custom.css'], suppress_
 
 # Компоновка приложения
 app.layout = html.Div(children=[
-    html.H1(children='Решатель интегро-дифференциального уравнения Вольтерра II рода', 
+    html.H1(children='Решатель ИДУ Вольтерра II рода', 
             style={'textAlign': 'center', 'color': '#1a5276'}),
     
-    html.Div(
-        "φ'(x) = f(x) + ∫₀ˣ K(x,t)·φ(t) dt",
-        style={'textAlign': 'center', 'fontSize': '1.2em', 'color': '#2980b9', 'marginBottom': '20px', 'fontFamily': 'monospace'}
-    ),
+    # Убрана строка с уравнением
     
     create_input_panel(),
     create_result_panels(),

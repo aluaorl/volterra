@@ -44,17 +44,6 @@ def create_result_panels():
                          'border': '2px solid #a8d5e8', 'borderRadius': '10px', 
                          'verticalAlign': 'top', 'backgroundColor': '#fff'}),
             ], style={'marginBottom': '20px'}),
-            
-            # Третий ряд - график сравнения интегрального члена
-            html.Div([
-                html.Div([
-                    html.H3('Проверка уравнения: I(x) = ∫₀ˣ K(x,t)·φ(t) dt', 
-                            style={'color': '#1a5276', 'textAlign': 'center'}),
-                    dcc.Graph(id='integral-plot', config={'responsive': True}),
-                ], style={'width': '98%', 'padding': '10px', 
-                         'border': '2px solid #a8d5e8', 'borderRadius': '10px', 
-                         'backgroundColor': '#fff'}),
-            ]),
         ]),
         
         # Информация об ошибке
