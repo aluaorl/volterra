@@ -3,11 +3,11 @@ from dash import html, dcc
 def create_history_panel():
     """Создает панель истории решений с модальным окном"""
     return html.Div([
-        # Кнопка-иконка для открытия истории (теперь с картинкой)
+        # Кнопка-иконка для открытия истории
         html.Div(
             html.Div(
                 html.Img(
-                    src='/assets/history-icon.png',  # путь к вашей иконке
+                    src='/assets/history-icon.png',
                     style={
                         'width': '32px',
                         'height': '32px',
@@ -20,17 +20,17 @@ def create_history_panel():
                     'top': '20px',
                     'right': '20px',
                     'cursor': 'pointer',
-                    'backgroundColor': 'transparent',  # убираем голубой фон
+                    'backgroundColor': 'transparent',
                     'width': '50px',
                     'height': '50px',
                     'borderRadius': '50%',
                     'display': 'flex',
                     'alignItems': 'center',
                     'justifyContent': 'center',
-                    'boxShadow': '0 4px 12px rgba(0,0,0,0.15)',
+                    'boxShadow': '0 4px 12px rgba(0,0,0,0.08)',
                     'transition': 'transform 0.2s ease',
                     'zIndex': '999',
-                    'background': 'white'  # белый фон вместо голубого
+                    'background': '#FFFFFF'
                 },
                 title="История решений"
             ),
@@ -45,14 +45,14 @@ def create_history_panel():
                     children=[
                         html.Div(
                             children=[
-                                html.H3("История решений", style={'margin': '0', 'color': '#1a5276', 'fontFamily': "'Roboto', 'Segoe UI', sans-serif"}),
+                                html.H3("История решений", style={'margin': '0', 'color': '#2C3E50', 'fontFamily': "'Roboto', 'Segoe UI', sans-serif"}),
                                 html.Span(
                                     "✕",
                                     id='close-history-modal',
                                     style={
                                         'fontSize': '24px',
                                         'cursor': 'pointer',
-                                        'color': '#e74c3c',
+                                        'color': '#E74C3C',
                                         'fontWeight': 'bold',
                                         'transition': 'transform 0.2s ease'
                                     },
@@ -64,8 +64,8 @@ def create_history_panel():
                                 'justifyContent': 'space-between',
                                 'alignItems': 'center',
                                 'padding': '15px 20px',
-                                'borderBottom': '2px solid #a8d5e8',
-                                'backgroundColor': '#f0f8ff'
+                                'borderBottom': '2px solid #D1D9E6',
+                                'backgroundColor': '#FFFFFF'
                             }
                         ),
                         html.Div(
@@ -73,7 +73,8 @@ def create_history_panel():
                             style={
                                 'maxHeight': '500px',
                                 'overflowY': 'auto',
-                                'padding': '15px'
+                                'padding': '15px',
+                                'backgroundColor': '#F5F7FA'
                             }
                         ),
                         html.Div(
@@ -83,8 +84,8 @@ def create_history_panel():
                                     id='clear-history-btn',
                                     style={
                                         'padding': '10px 20px',
-                                        'backgroundColor': '#e74c3c',
-                                        'color': 'white',
+                                        'background': 'linear-gradient(135deg, #2C3E50 0%, #1a2a3a 100%)',
+                                        'color': '#FFFFFF',
                                         'border': 'none',
                                         'borderRadius': '5px',
                                         'cursor': 'pointer',
@@ -92,46 +93,48 @@ def create_history_panel():
                                         'margin': '15px auto',
                                         'display': 'block',
                                         'width': '150px',
-                                        'fontFamily': "'Roboto', 'Segoe UI', sans-serif"
+                                        'fontFamily': "'Roboto', 'Segoe UI', sans-serif",
+                                        'transition': 'all 0.3s ease'
                                     }
                                 ),
                                 # Блок с авторским правом
                                 html.Div(
                                     [
-                                        html.Span("Иконка истории: ", style={'fontSize': '11px', 'color': '#999', 'fontFamily': "'Roboto', sans-serif"}),
+                                        html.Span("Иконка истории: ", style={'fontSize': '11px', 'color': '#7F8C8D', 'fontFamily': "'Roboto', sans-serif"}),
                                         html.A(
                                             "назад часы истории отчет значок",
                                             href="https://icon-icons.com/ru/authors/770-perpixel",
                                             target="_blank",
-                                            style={'fontSize': '11px', 'color': '#999', 'textDecoration': 'none', 'fontFamily': "'Roboto', sans-serif"}
+                                            style={'fontSize': '11px', 'color': '#7F8C8D', 'textDecoration': 'none', 'fontFamily': "'Roboto', sans-serif"}
                                         ),
-                                        html.Span(" by Perpixel on ", style={'fontSize': '11px', 'color': '#999', 'fontFamily': "'Roboto', sans-serif"}),
+                                        html.Span(" by Perpixel on ", style={'fontSize': '11px', 'color': '#7F8C8D', 'fontFamily': "'Roboto', sans-serif"}),
                                         html.A(
                                             "Icon-Icons.com",
                                             href="https://icon-icons.com/ru/authors/770-perpixel",
                                             target="_blank",
-                                            style={'fontSize': '11px', 'color': '#999', 'textDecoration': 'none', 'fontFamily': "'Roboto', sans-serif"}
+                                            style={'fontSize': '11px', 'color': '#7F8C8D', 'textDecoration': 'none', 'fontFamily': "'Roboto', sans-serif"}
                                         )
                                     ],
                                     style={
                                         'textAlign': 'center',
                                         'padding': '10px',
-                                        'borderTop': '1px solid #e0e0e0',
+                                        'borderTop': '1px solid #D1D9E6',
                                         'marginTop': '10px'
                                     }
                                 )
                             ],
-                            style={'borderTop': '1px solid #ddd', 'padding': '15px'}
+                            style={'borderTop': '1px solid #D1D9E6', 'padding': '15px', 'backgroundColor': '#FFFFFF'}
                         )
                     ],
                     style={
-                        'backgroundColor': '#f8fbff',
+                        'backgroundColor': '#FFFFFF',
                         'borderRadius': '15px',
                         'maxWidth': '600px',
                         'width': '90%',
                         'margin': '50px auto',
-                        'boxShadow': '0 10px 40px rgba(0,0,0,0.2)',
-                        'overflow': 'hidden'
+                        'boxShadow': '0 10px 40px rgba(0,0,0,0.1)',
+                        'overflow': 'hidden',
+                        'border': '1px solid #D1D9E6'
                     }
                 )
             ],

@@ -56,32 +56,31 @@ def run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points=200
     phi_reference = get_reference_solution(x, K_current, f_current, initial_condition)
     f_values = np.array([f_current(xi) for xi in x])
     
-    # Численная производная (только для графика)
     derivative_numerical = np.gradient(phi_numerical, h)
-    
-    # ТОЧНАЯ производная из правой части уравнения: φ'(x) = f(x) + I(x)
     derivative_exact = f_values + integral_values
     
     fig_solution = go.Figure()
     fig_solution.add_trace(go.Scatter(x=x, y=phi_reference, mode='lines', name='Эталон',
-                                      line=dict(color='#e74c3c', width=2)))
+                                      line=dict(color='#E74C3C', width=2)))
     fig_solution.add_trace(go.Scatter(x=x, y=phi_numerical, mode='lines', name='Численное (RK4+Трапеции)',
-                                      line=dict(color='#2980b9', dash='dash', width=1.5)))
+                                      line=dict(color='#2C3E50', dash='dash', width=1.5)))
     fig_solution.update_layout(
         title='', xaxis_title='x', yaxis_title='φ(x)', hovermode='x unified',
         template='plotly_white', height=400, showlegend=True,
-        plot_bgcolor='white', paper_bgcolor='white'
+        plot_bgcolor='white', paper_bgcolor='white',
+        font=dict(family="Roboto, sans-serif", size=12, color="#2C3E50")
     )
     
     fig_derivative = go.Figure()
     fig_derivative.add_trace(go.Scatter(x=x, y=derivative_numerical, mode='lines', name="φ'(x) (численная)",
-                                        line=dict(color='#8e44ad', width=2)))
+                                        line=dict(color='#34495E', width=2)))
     fig_derivative.add_trace(go.Scatter(x=x, y=derivative_exact, mode='lines', 
-                                        name='f(x) + I(x) (точная)', line=dict(color='#27ae60', dash='dash', width=1.5)))
+                                        name='f(x) + I(x) (точная)', line=dict(color='#E74C3C', dash='dash', width=1.5)))
     fig_derivative.update_layout(
         title='', xaxis_title='x', yaxis_title="φ'(x)", hovermode='x unified',
         template='plotly_white', height=400, showlegend=True,
-        plot_bgcolor='white', paper_bgcolor='white'
+        plot_bgcolor='white', paper_bgcolor='white',
+        font=dict(family="Roboto, sans-serif", size=12, color="#2C3E50")
     )
 
     error = np.abs(phi_numerical - phi_reference)
@@ -89,7 +88,7 @@ def run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points=200
     error_text = f'Максимальная ошибка: {max_error:.2e}'
 
     t_values = [0, 0.25, 0.5, 0.75, 1.0]
-    colors = ['#2980b9', '#27ae60', '#e74c3c', '#f39c12', '#8e44ad']
+    colors = ['#2C3E50', '#34495E', '#E74C3C', '#C0392B', '#7F8C8D']
     fig_kernel_sections = go.Figure()
     for t_val, color in zip(t_values, colors):
         K_section = [K_current(xi, t_val) for xi in x]
@@ -98,7 +97,8 @@ def run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points=200
     fig_kernel_sections.update_layout(
         title='', xaxis_title='x', yaxis_title='K(x,t)', hovermode='x unified',
         template='plotly_white', height=400,
-        plot_bgcolor='white', paper_bgcolor='white'
+        plot_bgcolor='white', paper_bgcolor='white',
+        font=dict(family="Roboto, sans-serif", size=12, color="#2C3E50")
     )
 
     n_points_3d = min(50, len(x))
@@ -110,7 +110,8 @@ def run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points=200
     fig_kernel_3d = go.Figure(data=[go.Surface(z=K_3d, x=X, y=T, colorscale='Blues')])
     fig_kernel_3d.update_layout(
         title='', scene=dict(xaxis_title='x', yaxis_title='t', zaxis_title='K(x,t)'),
-        height=400, plot_bgcolor='white', paper_bgcolor='white'
+        height=400, plot_bgcolor='white', paper_bgcolor='white',
+        font=dict(family="Roboto, sans-serif", size=12, color="#2C3E50")
     )
 
     computation_time = time.time() - start_time
@@ -135,7 +136,8 @@ def create_empty_figure(title="Ожидание ввода"):
         xaxis=dict(range=[0, 1]),
         yaxis=dict(range=[-1, 1]),
         plot_bgcolor='white',
-        paper_bgcolor='white'
+        paper_bgcolor='white',
+        font=dict(family="Roboto, sans-serif", size=12, color="#2C3E50")
     )
     return fig
 
@@ -149,7 +151,7 @@ def format_equation_beautifully(kernel_expr, rhs_expr):
     if not kernel_expr or not rhs_expr:
         return html.Div([
             html.Div("Введите выражения для ядра K(x,t) и правой части f(x)", 
-                    style={'color': '#666', 'fontStyle': 'italic', 'textAlign': 'center'})
+                    style={'color': '#7F8C8D', 'fontStyle': 'italic', 'textAlign': 'center'})
         ])
     
     try:
@@ -171,22 +173,22 @@ def format_equation_beautifully(kernel_expr, rhs_expr):
         
         return html.Div([
             html.Div([
-                html.Span("φ'(x) = ", style={'fontWeight': 'bold', 'fontSize': '1.2em', 'color': '#1a5276'}),
-                html.Span(rhs_display, style={'color': '#27ae60', 'fontWeight': 'bold', 'fontSize': '1.2em'}),
-                html.Span(" + ", style={'fontWeight': 'bold', 'fontSize': '1.2em', 'color': '#1a5276'}),
-                html.Span("∫₀ˣ ", style={'fontSize': '1.2em', 'color': '#1a5276'}),
-                html.Span(kernel_display, style={'color': '#2980b9', 'fontWeight': 'bold', 'fontSize': '1.2em'}),
-                html.Span(" · φ(t) dt", style={'fontSize': '1.2em', 'color': '#1a5276'}),
+                html.Span("φ'(x) = ", style={'fontWeight': 'bold', 'fontSize': '1.2em', 'color': '#2C3E50'}),
+                html.Span(rhs_display, style={'color': '#E74C3C', 'fontWeight': 'bold', 'fontSize': '1.2em'}),
+                html.Span(" + ", style={'fontWeight': 'bold', 'fontSize': '1.2em', 'color': '#2C3E50'}),
+                html.Span("∫₀ˣ ", style={'fontSize': '1.2em', 'color': '#2C3E50'}),
+                html.Span(kernel_display, style={'color': '#34495E', 'fontWeight': 'bold', 'fontSize': '1.2em'}),
+                html.Span(" · φ(t) dt", style={'fontSize': '1.2em', 'color': '#2C3E50'}),
             ], style={'marginBottom': '15px', 'fontFamily': 'monospace', 'textAlign': 'center'}),
         ])
     except Exception as e:
         return html.Div([
             html.Div([
-                html.Span("φ'(x) = ", style={'fontWeight': 'bold', 'fontSize': '1.1em', 'color': '#1a5276'}),
-                html.Span(rhs_expr, style={'color': '#27ae60', 'fontFamily': 'monospace'}),
-                html.Span(" + ∫₀ˣ ", style={'fontSize': '1.1em', 'color': '#1a5276'}),
-                html.Span(kernel_expr, style={'color': '#2980b9', 'fontFamily': 'monospace'}),
-                html.Span(" · φ(t) dt", style={'fontSize': '1.1em', 'color': '#1a5276'}),
+                html.Span("φ'(x) = ", style={'fontWeight': 'bold', 'fontSize': '1.1em', 'color': '#2C3E50'}),
+                html.Span(rhs_expr, style={'color': '#E74C3C', 'fontFamily': 'monospace'}),
+                html.Span(" + ∫₀ˣ ", style={'fontSize': '1.1em', 'color': '#2C3E50'}),
+                html.Span(kernel_expr, style={'color': '#34495E', 'fontFamily': 'monospace'}),
+                html.Span(" · φ(t) dt", style={'fontSize': '1.1em', 'color': '#2C3E50'}),
             ], style={'marginBottom': '10px', 'textAlign': 'center'}),
         ])
     
@@ -295,7 +297,7 @@ def register_callbacks(app):
         if not kernel_expr or not rhs_expr:
             return html.Div([
                 html.Div("Введите выражения для ядра K(x,t) и правой части f(x)", 
-                        style={'color': '#666', 'fontStyle': 'italic', 'textAlign': 'center'})
+                        style={'color': '#7F8C8D', 'fontStyle': 'italic', 'textAlign': 'center'})
             ])
         return format_equation_beautifully(kernel_expr, rhs_expr)
     
@@ -355,13 +357,13 @@ def register_callbacks(app):
         if error_text:
             error_style = {
                 'textAlign': 'center', 
-                'color': '#c0392b', 
+                'color': '#E74C3C', 
                 'fontSize': '0.95em', 
                 'margin': '15px auto',
                 'padding': '12px',
-                'backgroundColor': '#fce4ec',
+                'backgroundColor': '#FDF3F2',
                 'borderRadius': '8px',
-                'borderLeft': '4px solid #c0392b',
+                'borderLeft': '4px solid #E74C3C',
                 'maxWidth': '80%'
             }
             empty_fig = create_empty_figure("Некорректное выражение")
@@ -420,8 +422,8 @@ def register_callbacks(app):
              computation_time) = run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points)
             
             success_status = html.Div([
-                html.Span("Вычисление успешно завершено! ", style={'fontWeight': 'bold'}),
-                html.Span(f"Время выполнения: {computation_time:.2f} секунд")
+                html.Span("Вычисление успешно завершено! ", style={'fontWeight': 'bold', 'color': '#2C3E50'}),
+                html.Span(f"Время выполнения: {computation_time:.2f} секунд", style={'color': '#7F8C8D'})
             ], style={'color': '#27ae60'})
             
             hist = []
@@ -464,9 +466,9 @@ def register_callbacks(app):
                 error_msg = error_msg.split("Ошибка при вычислении функции:")[-1].strip()
             
             error_status = html.Div([
-                html.Span("Ошибка! ", style={'fontWeight': 'bold'}),
-                html.Div(error_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
-            ], style={'color': '#c0392b'})
+                html.Span("Ошибка! ", style={'fontWeight': 'bold', 'color': '#E74C3C'}),
+                html.Div(error_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#C0392B'})
+            ], style={'color': '#E74C3C'})
             
             empty_fig = create_empty_figure("Ошибка вычислений")
             
@@ -485,11 +487,11 @@ def register_callbacks(app):
         
         if clear_clicks and ctx.triggered and 'clear-history-btn' in ctx.triggered[0]['prop_id']:
             return html.Div("История пуста. Решите уравнение, чтобы оно появилось здесь.", 
-                          style={'color': '#999', 'fontStyle': 'italic', 'textAlign': 'center', 'padding': '20px'})
+                          style={'color': '#95A5A6', 'fontStyle': 'italic', 'textAlign': 'center', 'padding': '20px'})
         
         if not history_data or len(history_data) == 0:
             return html.Div("История пуста. Решите уравнение, чтобы оно появилось здесь.", 
-                          style={'color': '#999', 'fontStyle': 'italic', 'textAlign': 'center', 'padding': '20px'})
+                          style={'color': '#95A5A6', 'fontStyle': 'italic', 'textAlign': 'center', 'padding': '20px'})
         
         history_items = []
         for record in history_data:
@@ -506,18 +508,18 @@ def register_callbacks(app):
                             html.Div(
                                 children=[
                                     html.Span(f"{record['timestamp']} | {record['date']}", 
-                                             style={'fontWeight': 'bold', 'color': '#1a5276', 'fontSize': '0.9em'}),
+                                             style={'fontWeight': 'bold', 'color': '#2C3E50', 'fontSize': '0.9em'}),
                                     html.Span(f" | φ(0)={record.get('initial_condition', 0)}", 
-                                             style={'color': '#666', 'fontSize': '0.85em', 'marginLeft': '10px'}),
+                                             style={'color': '#7F8C8D', 'fontSize': '0.85em', 'marginLeft': '10px'}),
                                 ]
                             ),
                             html.Div(
                                 children=[
                                     html.Small(f"K(x,t) = {kernel_preview}", 
-                                             style={'color': '#2980b9', 'fontFamily': 'monospace'}),
+                                             style={'color': '#34495E', 'fontFamily': 'monospace'}),
                                     html.Br(),
                                     html.Small(f"f(x) = {rhs_preview}", 
-                                             style={'color': '#27ae60', 'fontFamily': 'monospace'}),
+                                             style={'color': '#E74C3C', 'fontFamily': 'monospace'}),
                                 ], 
                                 style={'marginLeft': '15px', 'marginTop': '5px', 'marginBottom': '5px'}
                             ),
@@ -536,8 +538,8 @@ def register_callbacks(app):
                                         style={
                                             'padding': '8px',
                                             'marginRight': '8px',
-                                            'backgroundColor': "#ffffff",
-                                            'border': 'none',
+                                            'backgroundColor': "#FFFFFF",
+                                            'border': '1px solid #D1D9E6',
                                             'borderRadius': '5px',
                                             'cursor': 'pointer',
                                             'transition': 'transform 0.2s ease',
@@ -559,8 +561,8 @@ def register_callbacks(app):
                                         id={'type': 'delete-solution', 'index': record['id']},
                                         style={
                                             'padding': '8px',
-                                            'backgroundColor': "#ffffff",
-                                            'border': 'none',
+                                            'backgroundColor': "#FFFFFF",
+                                            'border': '1px solid #D1D9E6',
                                             'borderRadius': '5px',
                                             'cursor': 'pointer',
                                             'transition': 'transform 0.2s ease',
@@ -574,9 +576,9 @@ def register_callbacks(app):
                                 style={'marginTop': '8px', 'textAlign': 'right'}
                             )
                         ], 
-                        style={'padding': '12px', 'borderBottom': '1px solid #ddd',
+                        style={'padding': '12px', 'borderBottom': '1px solid #D1D9E6',
                                'marginBottom': '8px', 'borderRadius': '8px',
-                               'backgroundColor': 'white', 'border': '1px solid #e0e0e0',
+                               'backgroundColor': 'white', 'border': '1px solid #D1D9E6',
                                'transition': 'transform 0.2s ease, box-shadow 0.2s ease'}
                     )
                 ],
@@ -631,9 +633,9 @@ def register_callbacks(app):
             except Exception as e:
                 error_msg = str(e)
                 status_msg = html.Div([
-                    html.Span("Ошибка! ", style={'fontWeight': 'bold'}),
-                    html.Div(error_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#c0392b'})
-                ], style={'color': '#c0392b', 'textAlign': 'center', 'padding': '10px'})
+                    html.Span("Ошибка! ", style={'fontWeight': 'bold', 'color': '#E74C3C'}),
+                    html.Div(error_msg, style={'fontSize': '0.9em', 'marginTop': '10px', 'color': '#C0392B'})
+                ], style={'color': '#E74C3C', 'textAlign': 'center', 'padding': '10px'})
                 empty_fig = create_empty_figure("Ошибка вычислений")
                 return (
                     no_update, no_update, no_update,
@@ -648,8 +650,8 @@ def register_callbacks(app):
                 )
             
             status_msg = html.Div([
-                html.Span("Загружено из истории! ", style={'fontWeight': 'bold'}),
-                html.Span(f"Решение от {record.get('timestamp', '')} {record.get('date', '')}")
+                html.Span("Загружено из истории! ", style={'fontWeight': 'bold', 'color': '#2C3E50'}),
+                html.Span(f"Решение от {record.get('timestamp', '')} {record.get('date', '')}", style={'color': '#7F8C8D'})
             ], style={'color': '#27ae60', 'textAlign': 'center', 'padding': '10px'})
             
             modal_closed_style = {'position': 'fixed', 'top': '0', 'left': '0', 'width': '100%', 'height': '100%',
