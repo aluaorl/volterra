@@ -45,7 +45,7 @@ def create_history_panel():
                     children=[
                         html.Div(
                             children=[
-                                html.H3("История решений", style={'margin': '0', 'color': '#1a5276'}),
+                                html.H3("История решений", style={'margin': '0', 'color': '#1a5276', 'fontFamily': "'Roboto', 'Segoe UI', sans-serif"}),
                                 html.Span(
                                     "✕",
                                     id='close-history-modal',
@@ -91,25 +91,26 @@ def create_history_panel():
                                         'fontSize': '14px',
                                         'margin': '15px auto',
                                         'display': 'block',
-                                        'width': '150px'
+                                        'width': '150px',
+                                        'fontFamily': "'Roboto', 'Segoe UI', sans-serif"
                                     }
                                 ),
                                 # Блок с авторским правом
                                 html.Div(
                                     [
-                                        html.Span("Иконка истории: ", style={'fontSize': '11px', 'color': '#999'}),
+                                        html.Span("Иконка истории: ", style={'fontSize': '11px', 'color': '#999', 'fontFamily': "'Roboto', sans-serif"}),
                                         html.A(
                                             "назад часы истории отчет значок",
                                             href="https://icon-icons.com/ru/authors/770-perpixel",
                                             target="_blank",
-                                            style={'fontSize': '11px', 'color': '#999', 'textDecoration': 'none'}
+                                            style={'fontSize': '11px', 'color': '#999', 'textDecoration': 'none', 'fontFamily': "'Roboto', sans-serif"}
                                         ),
-                                        html.Span(" by Perpixel on ", style={'fontSize': '11px', 'color': '#999'}),
+                                        html.Span(" by Perpixel on ", style={'fontSize': '11px', 'color': '#999', 'fontFamily': "'Roboto', sans-serif"}),
                                         html.A(
                                             "Icon-Icons.com",
                                             href="https://icon-icons.com/ru/authors/770-perpixel",
                                             target="_blank",
-                                            style={'fontSize': '11px', 'color': '#999', 'textDecoration': 'none'}
+                                            style={'fontSize': '11px', 'color': '#999', 'textDecoration': 'none', 'fontFamily': "'Roboto', sans-serif"}
                                         )
                                     ],
                                     style={

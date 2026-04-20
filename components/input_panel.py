@@ -28,7 +28,7 @@ def create_input_panel():
             # Блок для ядра K(x,t) - объединен в одну карточку
             html.Div([
                 html.Div([
-                    html.Label('Ядро K(x,t):', style={'fontWeight': 'bold', 'fontSize': '1.1em', 'color': '#1a5276', 'marginBottom': '10px', 'display': 'block'}),
+                    html.Label('Ядро K(x,t):', style={'fontWeight': 'bold', 'fontSize': '1.1em', 'color': '#1a5276', 'marginBottom': '10px', 'display': 'block', 'fontFamily': "'Roboto', 'Segoe UI', sans-serif"}),
                     dcc.Textarea(
                         id='kernel-input',
                         placeholder='Введите выражение для ядра K(x,t) (используйте x и t как переменные)',
@@ -37,7 +37,7 @@ def create_input_panel():
                         style={
                             'width': '100%',
                             'height': '60px',
-                            'fontFamily': 'monospace',
+                            'fontFamily': "'Roboto', monospace",
                             'fontSize': '13px',
                             'padding': '8px',
                             'borderRadius': '5px',
@@ -62,7 +62,8 @@ def create_input_panel():
                                 'backgroundColor': '#e8eef2',
                                 'borderRadius': '6px',
                                 'transition': 'all 0.3s ease',
-                                'fontSize': '0.9em'
+                                'fontSize': '0.9em',
+                                'fontFamily': "'Roboto', 'Segoe UI', sans-serif"
                             },
                             id='kernel-examples-toggle'),
                     html.Div(
@@ -74,7 +75,7 @@ def create_input_panel():
                                     name, 
                                     id={'type': 'kernel-example', 'index': i},
                                     style={
-                                        'width': '55%',
+                                        'width': '51%',
                                         'textAlign': 'left',
                                         'margin': '3px 0',
                                         'padding': '5px 10px',
@@ -84,7 +85,8 @@ def create_input_panel():
                                         'border': 'none',
                                         'borderRadius': '15px',
                                         'cursor': 'pointer',
-                                        'transition': 'transform 0.2s ease, box-shadow 0.2s ease'
+                                        'transition': 'transform 0.2s ease, box-shadow 0.2s ease',
+                                        'fontFamily': "'Roboto', 'Segoe UI', sans-serif"
                                     }
                                 )
                                 for i, name in enumerate(KERNEL_EXAMPLES.keys())
@@ -110,7 +112,7 @@ def create_input_panel():
             # Блок для правой части f(x) - объединен в одну карточку
             html.Div([
                 html.Div([
-                    html.Label('Правая часть f(x):', style={'fontWeight': 'bold', 'fontSize': '1.1em', 'color': '#1a5276', 'marginBottom': '10px', 'display': 'block'}),
+                    html.Label('Правая часть f(x):', style={'fontWeight': 'bold', 'fontSize': '1.1em', 'color': '#1a5276', 'marginBottom': '10px', 'display': 'block', 'fontFamily': "'Roboto', 'Segoe UI', sans-serif"}),
                     dcc.Textarea(
                         id='rhs-input',
                         placeholder='Введите выражение для правой части f(x) (используйте x как переменную)',
@@ -119,7 +121,7 @@ def create_input_panel():
                         style={
                             'width': '100%',
                             'height': '60px',
-                            'fontFamily': 'monospace',
+                            'fontFamily': "'Roboto', monospace",
                             'fontSize': '13px',
                             'padding': '8px',
                             'borderRadius': '5px',
@@ -144,7 +146,8 @@ def create_input_panel():
                                 'backgroundColor': '#e8eef2',
                                 'borderRadius': '6px',
                                 'transition': 'all 0.3s ease',
-                                'fontSize': '0.9em'
+                                'fontSize': '0.9em',
+                                'fontFamily': "'Roboto', 'Segoe UI', sans-serif"
                             },
                             id='rhs-examples-toggle'),
                     html.Div(
@@ -156,7 +159,7 @@ def create_input_panel():
                                     name, 
                                     id={'type': 'rhs-example', 'index': i},
                                     style={
-                                        'width': '55%',
+                                        'width': '51%',
                                         'textAlign': 'left',
                                         'margin': '3px 0',
                                         'padding': '5px 10px',
@@ -166,7 +169,8 @@ def create_input_panel():
                                         'border': 'none',
                                         'borderRadius': '15px',
                                         'cursor': 'pointer',
-                                        'transition': 'transform 0.2s ease, box-shadow 0.2s ease'
+                                        'transition': 'transform 0.2s ease, box-shadow 0.2s ease',
+                                        'fontFamily': "'Roboto', 'Segoe UI', sans-serif"
                                     }
                                 )
                                 for i, name in enumerate(RHS_EXAMPLES.keys())
@@ -191,7 +195,7 @@ def create_input_panel():
         
         # Начальное условие
         html.Div([
-            html.Label('Начальное условие φ(0):', style={'fontWeight': 'bold', 'color': '#333', 'marginBottom': '8px', 'display': 'block', 'textAlign': 'left', 'fontSize': '0.95em'}),
+            html.Label('Начальное условие φ(0):', style={'fontWeight': 'bold', 'color': '#333', 'marginBottom': '8px', 'display': 'block', 'textAlign': 'left', 'fontSize': '0.95em', 'fontFamily': "'Roboto', 'Segoe UI', sans-serif"}),
             dcc.Input(
                 id='initial-condition',
                 type='number',
@@ -204,7 +208,8 @@ def create_input_panel():
                     'border': '2px solid #a8d5e8',
                     'fontSize': '14px',
                     'textAlign': 'center',
-                    'display': 'block'
+                    'display': 'block',
+                    'fontFamily': "'Roboto', monospace"
                 }
             ),
         ], style={'padding': '15px', 'textAlign': 'left', 'width': '60%', 'margin': '0 auto'}),
@@ -213,76 +218,76 @@ def create_input_panel():
         html.Div([
             html.Div(id='equation-display', 
                      style={'padding': '10px', 'backgroundColor': '#e8eef2', 
-                            'borderRadius': '8px', 'fontFamily': 'monospace', 
+                            'borderRadius': '8px', 'fontFamily': "'Roboto', monospace", 
                             'fontSize': '1em', 'textAlign': 'center',
                             'color': '#333', 'border': '2px solid #a8d5e8',
                             'width': '60%', 'margin': '0 auto'}),
         ], style={'padding': '15px', 'marginTop': '5px'}),
         
        # Легенда функций - компактная версия
-html.Div([
-    html.Div([
-        html.H5('▼ Поддерживаемые функции и константы:', 
-                style={'color': '#1a5276', 'marginBottom': '8px', 'cursor': 'pointer', 'fontSize': '0.95em'},
-                id='legend-toggle'),
         html.Div([
-            # Вводная информация о синонимах
             html.Div([
-                html.P('✓ Ввод распознает синонимы функций, как asin, arsin, arcsin', 
-                       style={'margin': '0 0 10px 0', 'color': '#555', 'fontSize': '0.8em', 'fontStyle': 'italic'}),
-            ]),
-            
-            html.Div([
-                # Колонка 1
+                html.H5('▼ Поддерживаемые функции и константы:', 
+                        style={'color': '#1a5276', 'marginBottom': '8px', 'cursor': 'pointer', 'fontSize': '0.95em', 'fontFamily': "'Roboto', 'Segoe UI', sans-serif"},
+                        id='legend-toggle'),
                 html.Div([
-                    html.H6('Тригонометрические и обратные:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em'}),
-                    html.P('sin, cos, tan, tg, cot, ctg, sec, csc, cosec', 
-                           style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em'}),
-                    html.P('arcsin, arccos, arctan, arctg, arccot, arcsec, arccsc', 
-                           style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em'}),
+                    # Вводная информация о синонимах
+                    html.Div([
+                        html.P('✓ Ввод распознает синонимы функций, как asin, arsin, arcsin', 
+                               style={'margin': '0 0 10px 0', 'color': '#555', 'fontSize': '0.8em', 'fontStyle': 'italic', 'fontFamily': "'Roboto', sans-serif"}),
+                    ]),
                     
-                    html.H6('Гиперболические и обратные:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em'}),
-                    html.P('sinh, sh, cosh, ch, tanh, th, coth, cth, sech, csch', 
-                           style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em'}),
-                    html.P('arsinh, arcosh, artanh, arcoth, arsech, arcsch', 
-                           style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em'}),
-                ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
-                
-                # Колонка 2
-                html.Div([
-                    html.H6('Логарифмы:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em'}),
-                    html.P('ln, lg, log, log2, log10, log(a, x)', 
-                           style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em'}),
+                    html.Div([
+                        # Колонка 1
+                        html.Div([
+                            html.H6('Тригонометрические и обратные:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em', 'fontFamily': "'Roboto', sans-serif"}),
+                            html.P('sin, cos, tan, tg, cot, ctg, sec, csc, cosec', 
+                                   style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em', 'fontFamily': "'Roboto', monospace"}),
+                            html.P('arcsin, arccos, arctan, arctg, arccot, arcsec, arccsc', 
+                                   style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em', 'fontFamily': "'Roboto', monospace"}),
+                            
+                            html.H6('Гиперболические и обратные:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em', 'fontFamily': "'Roboto', sans-serif"}),
+                            html.P('sinh, sh, cosh, ch, tanh, th, coth, cth, sech, csch', 
+                                   style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em', 'fontFamily': "'Roboto', monospace"}),
+                            html.P('arsinh, arcosh, artanh, arcoth, arsech, arcsch', 
+                                   style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em', 'fontFamily': "'Roboto', monospace"}),
+                        ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                        
+                        # Колонка 2
+                        html.Div([
+                            html.H6('Логарифмы:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em', 'fontFamily': "'Roboto', sans-serif"}),
+                            html.P('ln, lg, log, log2, log10, log(a, x)', 
+                                   style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em', 'fontFamily': "'Roboto', monospace"}),
+                            
+                            html.H6('Степени и корни:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em', 'fontFamily': "'Roboto', sans-serif"}),
+                            html.P('x^2, x**2, sqrt, sqrt(n, x)', 
+                                   style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em', 'fontFamily': "'Roboto', monospace"}),
+                            
+                            html.H6('Модуль и экспонента:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em', 'fontFamily': "'Roboto', sans-serif"}),
+                            html.P('abs(x), exp(x), e^x', 
+                                   style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em', 'fontFamily': "'Roboto', monospace"}),
+                        ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                        
+                        # Колонка 3
+                        html.Div([
+                            html.H6('Константы:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em', 'fontFamily': "'Roboto', sans-serif"}),
+                            html.P('pi, π, e', 
+                                   style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em', 'fontFamily': "'Roboto', monospace"}),
+                            
+                            html.H6('Греческие буквы:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em', 'fontFamily': "'Roboto', sans-serif"}),
+                            html.P('alpha, beta, gamma, delta, epsilon, zeta, eta, theta', 
+                                   style={'margin': '0 0 3px 0', 'color': '#333', 'fontSize': '0.75em', 'fontFamily': "'Roboto', monospace"}),
+                            html.P('iota, kappa, lambda, mu, nu, xi, pi, rho', 
+                                   style={'margin': '0 0 3px 0', 'color': '#333', 'fontSize': '0.75em', 'fontFamily': "'Roboto', monospace"}),
+                            html.P('sigma, tau, upsilon, phi, chi, psi, omega', 
+                                   style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.75em', 'fontFamily': "'Roboto', monospace"}),
+                            
+                        ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                    ]),
                     
-                    html.H6('Степени и корни:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em'}),
-                    html.P('x^2, x**2, sqrt, sqrt(n, x)', 
-                           style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em'}),
-                    
-                    html.H6('Модуль и экспонента:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em'}),
-                    html.P('abs(x), exp(x), e^x', 
-                           style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em'}),
-                ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
-                
-                # Колонка 3
-                html.Div([
-                    html.H6('Константы:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em'}),
-                    html.P('pi, π, e', 
-                           style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.8em'}),
-                    
-                    html.H6('Греческие буквы:', style={'color': '#2980b9', 'marginBottom': '3px', 'fontSize': '0.85em'}),
-                    html.P('alpha, beta, gamma, delta, epsilon, zeta, eta, theta', 
-                           style={'margin': '0 0 3px 0', 'color': '#333', 'fontSize': '0.75em'}),
-                    html.P('iota, kappa, lambda, mu, nu, xi, pi, rho', 
-                           style={'margin': '0 0 3px 0', 'color': '#333', 'fontSize': '0.75em'}),
-                    html.P('sigma, tau, upsilon, phi, chi, psi, omega', 
-                           style={'margin': '0 0 8px 0', 'color': '#333', 'fontSize': '0.75em'}),
-                    
-                ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
-            ]),
-            
-        ], id='legend-content', style={'display': 'none', 'marginTop': '8px'}),
-    ], style={'padding': '10px', 'backgroundColor': '#f8f9fa', 'borderRadius': '8px', 'marginTop': '15px', 'border': '1px solid #e0e0e0'}),
-]),
+                ], id='legend-content', style={'display': 'none', 'marginTop': '8px'}),
+            ], style={'padding': '10px', 'backgroundColor': '#f8f9fa', 'borderRadius': '8px', 'marginTop': '15px', 'border': '1px solid #e0e0e0'}),
+        ]),
         
         html.Div([
             html.Button('Решить уравнение', id='solve-button',  disabled=True,
@@ -296,7 +301,8 @@ html.Div([
                            'cursor': 'pointer',
                            'margin': '10px auto',
                            'display': 'block',
-                           'width': '180px'
+                           'width': '180px',
+                           'fontFamily': "'Roboto', 'Segoe UI', sans-serif"
                        }),
             
             html.Div([
@@ -311,7 +317,7 @@ html.Div([
                         'margin': '0 auto'
                     }),
                     html.P('Вычисление... Пожалуйста, подождите', 
-                           style={'textAlign': 'center', 'marginTop': '10px', 'color': '#666', 'fontSize': '0.9em'})
+                           style={'textAlign': 'center', 'marginTop': '10px', 'color': '#666', 'fontSize': '0.9em', 'fontFamily': "'Roboto', sans-serif"})
                 ], style={'display': 'none', 'marginTop': '20px'})
             ], style={'textAlign': 'center'})
         ]),
