@@ -1,4 +1,9 @@
-/* Основные стили */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 20px;
@@ -19,15 +24,27 @@ h1 {
 
 /* Стили для числового поля ввода N */
 input[type="number"] {
-    border: 2px solid #2980b9 !important;
+    border: 2px solid #a8d5e8 !important;
     border-radius: 5px !important;
     background-color: white !important;
+    transition: all 0.3s ease;
 }
 
 input[type="number"]:focus {
     outline: none !important;
-    border-color: #1a5276 !important;
-    box-shadow: 0 0 5px #2980b9 !important;
+    border-color: #3498db !important;
+    box-shadow: 0 0 8px rgba(52, 152, 219, 0.3) !important;
+}
+
+/* Стили для textarea */
+textarea {
+    transition: all 0.3s ease;
+}
+
+textarea:focus {
+    outline: none !important;
+    border-color: #3498db !important;
+    box-shadow: 0 0 8px rgba(52, 152, 219, 0.3) !important;
 }
 
 #error-output {
@@ -108,7 +125,7 @@ button:disabled:hover {
 
 .history-item:hover {
     transform: translateX(5px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
 }
 
 /* Стилизация скроллбара для истории */
@@ -136,6 +153,10 @@ button:hover {
     transition: opacity 0.2s ease;
 }
 
+button:active {
+    transform: scale(0.95);
+}
+
 /* Стили для панели истории */
 #history-list {
     scroll-behavior: smooth;
@@ -144,5 +165,42 @@ button:hover {
 /* Блок отображения уравнения */
 #equation-display {
     background-color: #e8eef2 !important;
-    border: none !important;
+    border: 2px solid #a8d5e8 !important;
+}
+
+/* Анимация для модального окна */
+#history-modal {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Hover эффекты для кнопок-примеров */
+button[id*="example"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Стили для графиков */
+.js-plotly-plot .plotly .main-svg {
+    border-radius: 8px;
+}
+
+/* Анимация для кнопки истории */
+#history-toggle-btn div:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+}
+
+/* Закрытие модального окна */
+#close-history-modal:hover {
+    transform: scale(1.2);
+    color: #c0392b;
 }
