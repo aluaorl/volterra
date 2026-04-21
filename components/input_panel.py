@@ -20,6 +20,7 @@ RHS_EXAMPLES = {
 def create_input_panel():
     """Создает панель ввода параметров"""
     return html.Div([
+        dcc.Store(id='legend-state', data={'expanded': False}),
         dcc.Store(id='kernel-examples-state', data={'expanded': False}),
         dcc.Store(id='rhs-examples-state', data={'expanded': False}),
         
@@ -84,8 +85,8 @@ def create_input_panel():
                 step=0.1,
                 style={'width': '120px', 'padding': '6px', 'textAlign': 'center'}
             ),
-        ], style={'padding': '15px', 'textAlign': 'left', 'width': '60%', 'margin': '0 auto'}),
-        
+        ], style={'padding': '15px 20px', 'textAlign': 'left', 'display': 'inline-block', 'width': 'auto'}),
+
         # Отображение уравнения
         html.Div(id='equation-display', style={'marginTop': '5px'}),
         

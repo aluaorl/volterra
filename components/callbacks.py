@@ -279,14 +279,22 @@ def register_callbacks(app):
             return no_update, RHS_EXAMPLES[example_name]
     
     @app.callback(
-        Output('legend-content', 'style'),
-        Input('legend-toggle', 'n_clicks'),
-        prevent_initial_call=True
-    )
-    def toggle_legend(n_clicks):
+    [Output('legend-content', 'style'),
+     Output('legend-state', 'data')],
+    Input('legend-toggle', 'n_clicks'),
+    State('legend-state', 'data'),
+    prevent_initial_call=True
+)
+    def toggle_legend(n_clicks, state):
         if n_clicks is None:
-            return {'display': 'none', 'marginTop': '10px'}
-        return {'display': 'block', 'marginTop': '10px', 'animation': 'fadeIn 0.3s ease-in'}
+            return {'display': 'none', 'marginTop': '10px'}, state
+    
+        if state.get('expanded', False):
+        # Скрываем
+            return {'display': 'none', 'marginTop': '10px'}, {'expanded': False}
+        else:
+        # Показываем
+            return {'display': 'block', 'marginTop': '10px', 'animation': 'fadeIn 0.3s ease-in'}, {'expanded': True}
     
     @app.callback(
         Output('equation-display', 'children'),
