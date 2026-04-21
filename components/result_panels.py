@@ -1,12 +1,10 @@
 from dash import dcc, html
 
 def create_result_panels():
-    """Создает панели для отображения результатов"""
     return html.Div([
         html.Div(id='status-message', className='status-message'),
         html.Div(id='error-message', className='error-message', style={'display': 'none'}),
         
-        # Графики
         html.Div([
             html.Div([
                 html.H3('График решения φ(x)', className='text-center'),
@@ -31,7 +29,6 @@ def create_result_panels():
             ], className='graph-card', style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'}),
         ]),
         
-        # Блок с максимальной ошибкой
         html.Div(id='max-error-display',),
         
         html.Div(id='error-output', className='error-text', style={'display': 'none'}),

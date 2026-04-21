@@ -1,6 +1,5 @@
 from dash import dcc, html
 
-# Примеры и подсказки для пользователя
 KERNEL_EXAMPLES = {
     "Экспоненциальное": "0.2 * exp(-(x - t))",
     "Косинусоидальное": "0.3 * cos(x - t)",
@@ -18,15 +17,12 @@ RHS_EXAMPLES = {
 }
 
 def create_input_panel():
-    """Создает панель ввода параметров"""
     return html.Div([
         dcc.Store(id='legend-state', data={'expanded': False}),
         dcc.Store(id='kernel-examples-state', data={'expanded': False}),
         dcc.Store(id='rhs-examples-state', data={'expanded': False}),
         
-        # Блоки ввода в два столбца
         html.Div([
-            # Левая колонка - ядро
             html.Div([
                 html.Label('Ядро K(x,t):', style={'fontWeight': 'bold', 'fontSize': '1.1em'}),
                 dcc.Textarea(
@@ -36,7 +32,6 @@ def create_input_panel():
                     style={'width': '100%', 'height': '60px'}
                 ),
                 
-                # Примеры ядер
                 html.Div([
                     html.Div('▼ Примеры ядер K(x,t):', className='example-toggle', id='kernel-examples-toggle'),
                     html.Div(
@@ -50,7 +45,6 @@ def create_input_panel():
                 ], style={'padding': '8px 12px', 'backgroundColor': '#FFFFFF', 'borderRadius': '8px', 'border': '1px solid #D1D9E6', 'marginTop': '10px'})
             ], className='input-card', style={'width': '48%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top'}),
             
-            # Правая колонка - правая часть
             html.Div([
                 html.Label('Правая часть f(x):', style={'fontWeight': 'bold', 'fontSize': '1.1em'}),
                 dcc.Textarea(
@@ -60,7 +54,6 @@ def create_input_panel():
                     style={'width': '100%', 'height': '60px'}
                 ),
                 
-                # Примеры правых частей
                 html.Div([
                     html.Div('▼ Примеры правых частей f(x):', className='example-toggle', id='rhs-examples-toggle'),
                     html.Div(
@@ -75,7 +68,6 @@ def create_input_panel():
             ], className='input-card', style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'})
         ], style={'display': 'flex', 'justifyContent': 'space-between', 'padding': '15px'}),
         
-        # Начальное условие
         html.Div([
             html.Label('Начальное условие φ(0):'),
             dcc.Input(
@@ -87,10 +79,8 @@ def create_input_panel():
             ),
         ], style={'padding': '15px 20px', 'textAlign': 'left', 'display': 'inline-block', 'width': 'auto'}),
 
-        # Отображение уравнения
         html.Div(id='equation-display', style={'marginTop': '5px'}),
         
-        # Легенда функций
         html.Div([
             html.Div([
                 html.H5('▼ Поддерживаемые функции и константы:', id='legend-toggle', style={'marginBottom': '8px'}),
@@ -126,10 +116,8 @@ def create_input_panel():
             ], style={'padding': '10px', 'backgroundColor': '#FFFFFF', 'borderRadius': '8px', 'marginTop': '15px', 'border': '1px solid #D1D9E6'})
         ]),
         
-        # Кнопка решения
         html.Button('Решить уравнение', id='solve-button', disabled=True),
         
-        # Индикатор загрузки
         html.Div([
             html.Div(className='loader'),
             html.P('Вычисление... Пожалуйста, подождите', style={'textAlign': 'center', 'marginTop': '10px', 'color': '#7F8C8D'})

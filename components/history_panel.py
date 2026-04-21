@@ -1,7 +1,6 @@
 from dash import dcc, html
 
 def create_history_panel():
-    """Создает панель истории решений"""
     return html.Div([
         # Кнопка истории
         html.Div(
@@ -20,7 +19,6 @@ def create_history_panel():
             style={'position': 'fixed', 'top': '20px', 'right': '20px', 'zIndex': '999'}
         ),
         
-        # Модальное окно
         html.Div(
             id='history-modal',
             style={

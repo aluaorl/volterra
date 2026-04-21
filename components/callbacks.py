@@ -8,7 +8,7 @@ import uuid
 from dash import html
 import sys
 import os
-from functools import lru_cache
+from functools import lru_cache 
 from dash.dependencies import ALL
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,7 +29,8 @@ def _pattern_button_index(ctx):
     except (json.JSONDecodeError, TypeError, ValueError, AttributeError):
         return None
 
-def run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points=200):
+def run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points=1000, N_ref=200):
+   
     start_time = time.time()
     
     if not kernel_expr or not kernel_expr.strip():
@@ -37,15 +38,13 @@ def run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points=200
     if not rhs_expr or not rhs_expr.strip():
         raise ValueError("Выражение для правой части f(x) не может быть пустым")
     
-    parsed_kernel = parse_user_input(kernel_expr, ['x', 't'])
-    parsed_rhs = parse_user_input(rhs_expr, ['x'])
-    K_current, f_current = get_cached_functions(parsed_kernel, parsed_rhs)
+    K_current, f_current = get_cached_functions(kernel_expr, rhs_expr) 
     
     try:
         test_K = K_current(0.5, 0.5)
         test_f = f_current(0.5)
     except Exception as e:
-        raise ValueError(f"{str(e)}")
+        raise ValueError(f"Ошибка при проверке функций ядра или правой части: {str(e)}")
 
     a = 0
     b = 1
@@ -53,12 +52,14 @@ def run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points=200
     x = np.linspace(a, b, N_points + 1)
 
     phi_numerical, integral_values = solve_volterra_RK4(x, h, K_current, f_current, initial_condition)
-    phi_reference = get_reference_solution(x, K_current, f_current, initial_condition)
+    
+    phi_reference = get_reference_solution(x, K_current, f_current, initial_condition, N_ref)
+    
     f_values = np.array([f_current(xi) for xi in x])
     
     derivative_numerical = np.gradient(phi_numerical, h)
-    derivative_exact = f_values + integral_values
-    
+    derivative_exact = f_values + integral_values 
+
     fig_solution = go.Figure()
     fig_solution.add_trace(go.Scatter(x=x, y=phi_reference, mode='lines', name='Эталон',
                                       line=dict(color='#E74C3C', width=2)))
@@ -91,7 +92,7 @@ def run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points=200
     colors = ['#2C3E50', '#34495E', '#E74C3C', '#C0392B', '#7F8C8D']
     fig_kernel_sections = go.Figure()
     for t_val, color in zip(t_values, colors):
-        K_section = [K_current(xi, t_val) for xi in x]
+        K_section = [K_current(xi, t_val) for xi in x] # Используем оптимизированную K_current
         fig_kernel_sections.add_trace(go.Scatter(
             x=x, y=K_section, mode='lines', name=f't = {t_val}', line=dict(color=color, width=2)))
     fig_kernel_sections.update_layout(
@@ -106,7 +107,7 @@ def run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points=200
     K_3d = np.zeros_like(X)
     for i in range(len(X)):
         for j in range(len(T)):
-            K_3d[i, j] = K_current(X[i, j], T[i, j])
+            K_3d[i, j] = K_current(X[i, j], T[i, j]) # Используем оптимизированную K_current
     fig_kernel_3d = go.Figure(data=[go.Surface(z=K_3d, x=X, y=T, colorscale='Blues')])
     fig_kernel_3d.update_layout(
         title='', scene=dict(xaxis_title='x', yaxis_title='t', zaxis_title='K(x,t)'),
@@ -141,7 +142,8 @@ def create_empty_figure(title="Ожидание ввода"):
     )
     return fig
 
-@lru_cache(maxsize=128)
+
+@lru_cache(maxsize=128) 
 def get_cached_functions(kernel_expr, rhs_expr):
     K_current = create_function_from_string(kernel_expr, ['x', 't'])
     f_current = create_function_from_string(rhs_expr, ['x'])
@@ -194,7 +196,6 @@ def format_equation_beautifully(kernel_expr, rhs_expr):
     
 def register_callbacks(app):
     
-    # Открытие/закрытие модального окна истории
     @app.callback(
         Output('history-modal', 'style'),
         [Input('history-toggle-btn', 'n_clicks'),
@@ -219,7 +220,6 @@ def register_callbacks(app):
                     'backgroundColor': 'rgba(0,0,0,0.5)', 'zIndex': '1000', 'display': 'none',
                     'backdropFilter': 'blur(5px)'}
     
-    # Переключение выпадающего списка примеров ядер
     @app.callback(
         [Output('kernel-examples-content', 'style'),
          Output('kernel-examples-toggle', 'children'),
@@ -237,7 +237,6 @@ def register_callbacks(app):
         else:
             return {'display': 'block', 'marginTop': '10px', 'animation': 'fadeIn 0.3s ease-in'}, '▲ Примеры ядер K(x,t):', {'expanded': True}
 
-    # Переключение выпадающего списка примеров правых частей
     @app.callback(
         [Output('rhs-examples-content', 'style'),
          Output('rhs-examples-toggle', 'children'),
@@ -255,7 +254,6 @@ def register_callbacks(app):
         else:
             return {'display': 'block', 'marginTop': '10px', 'animation': 'fadeIn 0.3s ease-in'}, '▲ Примеры правых частей f(x):', {'expanded': True}
 
-    # Колбэк для заполнения примеров из кнопок
     @app.callback(
         [Output('kernel-input', 'value'),
          Output('rhs-input', 'value')],
@@ -413,14 +411,14 @@ def register_callbacks(app):
         if initial_condition is None:
             initial_condition = 0.0
         
-        N_points = 200
+        N_points = 1000     
+        N_ref = 200         
         
         try:
             (fig_solution, fig_derivative, error_text, 
              fig_kernel_sections, fig_kernel_3d,
-             computation_time) = run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points)
+             computation_time) = run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points, N_ref)
             
-            # Создаем блок с максимальной ошибкой
             max_error_display = html.Div([
                                 html.Div(
                                     error_text,
@@ -647,7 +645,8 @@ def register_callbacks(app):
         if solution_id is None:
             raise PreventUpdate
         
-        N_points = 200
+        N_points = 1000     
+        N_ref = 200         
         
         for record in history_data:
             if str(record.get('id')) != str(solution_id):
@@ -658,7 +657,7 @@ def register_callbacks(app):
                 initial_cond = record.get('initial_condition', 0.0)
                 (fig_solution, fig_derivative, err_text, 
                  fig_sec, fig_3d, _t) = run_volterra_solution(
-                    record['kernel'], record['rhs'], initial_cond, N_points
+                    record['kernel'], record['rhs'], initial_cond, N_points, N_ref
                 )
                 
                 max_error_display = html.Div([

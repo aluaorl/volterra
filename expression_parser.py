@@ -1,7 +1,6 @@
 import re
 import numpy as np
 
-# Словарь синонимов функций (в нижнем регистре)
 FUNCTION_SYNONYMS = {
     # Обратные тригонометрические (арксинусы)
     'arcsin': 'np.arcsin',
@@ -131,7 +130,6 @@ GREEK_LETTERS = {
 }
 
 def normalize_case(expr):
-    """Приводит выражение к нижнему регистру, но сохраняет переменные x и t в исходном виде"""
     expr = re.sub(r'\bx\b', '___VAR_X___', expr, flags=re.IGNORECASE)
     expr = re.sub(r'\bt\b', '___VAR_T___', expr, flags=re.IGNORECASE)
     expr = expr.lower()
@@ -140,7 +138,6 @@ def normalize_case(expr):
     return expr
 
 def is_already_parsed(expr):
-    """Проверяет, не было ли выражение уже в формате np.*"""
     if 'np.' not in expr:
         return False
     compact = re.sub(r'\s+', '', expr)
@@ -151,7 +148,6 @@ def is_already_parsed(expr):
     return True
 
 def preprocess_expression(expr):
-    """Предобработка выражения: удаление пробелов, добавление * где нужно"""
     expr = re.sub(r'\s+', '', expr)
     expr = re.sub(r'(\d+\.\d+)', r'__FLOAT_\1__', expr)
     expr = re.sub(r'(\d+)([a-zA-Zα-ω])', r'\1*\2', expr)
@@ -163,9 +159,7 @@ def preprocess_expression(expr):
     return expr
 
 def process_power_after_function(expr):
-    """Обработка возведения функции в степень: sin(x)^2 -> (sin(x))**2"""
-    # Ищем pattern: функция(аргумент)^степень
-    # Например: sin(x)^2, cos(x)^3, exp(-x)^2 и т.д.
+    
     pattern = r'([a-zA-Z_][a-zA-Z0-9_]*\s*\([^)]*\))\s*\^\s*([0-9]+(?:\.[0-9]+)?)'
     
     def replace_power(match):
@@ -175,7 +169,6 @@ def process_power_after_function(expr):
     
     expr = re.sub(pattern, replace_power, expr)
     
-    # Также обрабатываем случай, когда степень после скобок с выражением: (x+1)^2
     pattern2 = r'\(([^)]+)\)\s*\^\s*([0-9]+(?:\.[0-9]+)?)'
     
     def replace_power2(match):
@@ -188,8 +181,7 @@ def process_power_after_function(expr):
     return expr
 
 def process_sqrt(expr):
-    """Обработка sqrt(n, x) - корень n-ой степени"""
-    # Обработка sqrt(3, x) или sqrt(3,x)
+  
     pattern = r'sqrt\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)'
     
     def replace_sqrt(match):
@@ -199,13 +191,11 @@ def process_sqrt(expr):
     
     expr = re.sub(pattern, replace_sqrt, expr)
     
-    # Обычный sqrt(x) - квадратный корень
     expr = re.sub(r'sqrt\s*\(\s*([^)]+)\s*\)', r'np.sqrt(\1)', expr)
     
     return expr
 
 def safe_eval_with_checks(expr, namespace, test_value=0.5):
-    """Безопасное вычисление выражения с проверкой на математические ошибки"""
     try:
         result = eval(expr, {"__builtins__": {}}, namespace)
         
@@ -245,7 +235,6 @@ def validate_expression_detailed(expr_str, variables=['x', 't']):
     try:
         expr = normalize_case(expr_str)
         
-        # Если выражение уже в формате np.*
         if is_already_parsed(expr):
             test_namespace = {'np': np}
             for var in variables:
@@ -256,21 +245,16 @@ def validate_expression_detailed(expr_str, variables=['x', 't']):
                 safe_eval_with_checks(expr, test_namespace, test_val)
             return True, ""
         
-        # Предобработка
         expr = preprocess_expression(expr)
         
-        # Обработка степени после функций (ДО замены функций)
         expr = process_power_after_function(expr)
         
-        # Обработка e^
         expr = re.sub(r'e\^\(([^)]+)\)', r'np.exp(\1)', expr)
         expr = re.sub(r'e\^([a-zA-Z0-9α-ω]+)', r'np.exp(\1)', expr)
         expr = re.sub(r'e\^\(-([^)]+)\)', r'np.exp(-\1)', expr)
         
-        # Обработка sqrt (должна быть до замены функций)
         expr = process_sqrt(expr)
         
-        # Замена функций
         for func_name, np_func in FUNCTION_SYNONYMS.items():
             pattern = r'(?<!np\.)\b' + re.escape(func_name) + r'\s*\('
             
@@ -291,20 +275,16 @@ def validate_expression_detailed(expr_str, variables=['x', 't']):
             else:
                 expr = re.sub(pattern, np_func + '(', expr)
         
-        # Замена констант
         for const, replacement in CONSTANTS.items():
             expr = re.sub(r'\b' + re.escape(const) + r'\b', replacement, expr)
         
-        # Обработка степени
         expr = re.sub(r'([a-zA-Z0-9α-ω\(\)]+)\^([a-zA-Z0-9α-ω\(\)]+)', r'(\1)**(\2)', expr)
         
         expr = re.sub(r'\s+', '', expr)
         
-        # Проверка скобок
         if expr.count('(') != expr.count(')'):
             return False, "Несбалансированные скобки"
         
-        # Пробуем скомпилировать
         try:
             compile(expr, '<string>', 'eval')
         except SyntaxError as e:
@@ -316,7 +296,6 @@ def validate_expression_detailed(expr_str, variables=['x', 't']):
             else:
                 return False, "Ошибка в синтаксисе выражения"
         
-        # Тестируем вычисление в нескольких точках
         test_namespace = {'np': np}
         test_points = [0.1, 0.3, 0.5, 0.7, 0.9]
         
@@ -370,17 +349,14 @@ def parse_user_input(expr_str, variables=['x', 't']):
     try:
         expr = preprocess_expression(expr)
         
-        # Обработка степени после функций (ДО замены функций)
         expr = process_power_after_function(expr)
         
         expr = re.sub(r'e\^\(([^)]+)\)', r'np.exp(\1)', expr)
         expr = re.sub(r'e\^([a-zA-Z0-9α-ω]+)', r'np.exp(\1)', expr)
         expr = re.sub(r'e\^\(-([^)]+)\)', r'np.exp(-\1)', expr)
         
-        # Обработка sqrt (должна быть до замены функций)
         expr = process_sqrt(expr)
         
-        # Замена функций
         for func_name, np_func in FUNCTION_SYNONYMS.items():
             pattern = r'(?<!np\.)\b' + re.escape(func_name) + r'\s*\('
             
@@ -401,7 +377,6 @@ def parse_user_input(expr_str, variables=['x', 't']):
             else:
                 expr = re.sub(pattern, np_func + '(', expr)
         
-        # Замена констант
         for const, replacement in CONSTANTS.items():
             expr = re.sub(r'\b' + re.escape(const) + r'\b', replacement, expr)
         
@@ -431,7 +406,6 @@ def parse_user_input(expr_str, variables=['x', 't']):
         raise ValueError(str(e))
 
 def format_for_display(expr, is_kernel=True):
-    """Форматирование выражения для красивого отображения"""
     result = expr.replace('np.', '')
     result = result.replace('**', '^')
     result = re.sub(r'exp\(([^)]+)\)', r'e^{\1}', result)
