@@ -1,4 +1,3 @@
-#
 import dash
 from dash import html
 from components.input_panel import create_input_panel
