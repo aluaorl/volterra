@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from calculation_engine import solve_volterra_RK4, get_reference_solution, create_function_from_string
 from expression_parser import parse_user_input, format_for_display, validate_expression_detailed
-from .input_panel import KERNEL_EXAMPLES, RHS_EXAMPLES
+from components.input_panel import KERNEL_EXAMPLES, RHS_EXAMPLES
 
 def _pattern_button_index(ctx):
     tid = getattr(ctx, 'triggered_id', None)
