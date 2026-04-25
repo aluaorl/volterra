@@ -269,7 +269,7 @@ def run_volterra_solution(kernel_expr, rhs_expr, initial_condition, N_points=100
 
     error = np.abs(phi_numerical - phi_reference)
     max_error = np.max(error)
-    error_text = f'Максимальная ошибка: {max_error:.2e}'
+    error_text = f'Глобальная погрешность в равномерной норме l_inf: {max_error:.2e}'
 
     computation_time = time.time() - start_time
     return (fig_solution, fig_derivative, error_text, computation_time)
