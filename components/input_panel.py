@@ -29,7 +29,7 @@ def create_input_panel():
                     id='kernel-input',
                     placeholder='Введите выражение для ядра K(x,t) (используйте x и t как переменные)',
                     value='0.2 * exp(-(x - t))',
-                    style={'width': '100%', 'height': '60px'}
+                    style={'width': '100%', 'height': '60px', 'resize': 'vertical'}
                 ),
                 
                 html.Div([
@@ -38,12 +38,14 @@ def create_input_panel():
                         id='kernel-examples-content',
                         style={'display': 'none', 'marginTop': '8px'},
                         children=[
-                            html.Button(name, id={'type': 'kernel-example', 'index': i}, className='example-button')
+                            html.Button(name, id={'type': 'kernel-example', 'index': i}, 
+                                       className='example-button', 
+                                       style={'margin': '4px', 'width': 'calc(100% - 8px)'})
                             for i, name in enumerate(KERNEL_EXAMPLES.keys())
                         ]
                     )
                 ], style={'padding': '8px 12px', 'backgroundColor': '#FFFFFF', 'borderRadius': '8px', 'border': '1px solid #D1D9E6', 'marginTop': '10px'})
-            ], className='input-card', style={'width': '48%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top'}),
+            ], className='input-card', style={'width': '48%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top', 'boxSizing': 'border-box'}),
             
             html.Div([
                 html.Label('Правая часть f(x):', style={'fontWeight': 'bold', 'fontSize': '1.1em'}),
@@ -51,7 +53,7 @@ def create_input_panel():
                     id='rhs-input',
                     placeholder='Введите выражение для правой части f(x) (используйте x как переменную)',
                     value='sin(x)',
-                    style={'width': '100%', 'height': '60px'}
+                    style={'width': '100%', 'height': '60px', 'resize': 'vertical'}
                 ),
                 
                 html.Div([
@@ -60,13 +62,15 @@ def create_input_panel():
                         id='rhs-examples-content',
                         style={'display': 'none', 'marginTop': '8px'},
                         children=[
-                            html.Button(name, id={'type': 'rhs-example', 'index': i}, className='example-button')
+                            html.Button(name, id={'type': 'rhs-example', 'index': i}, 
+                                       className='example-button',
+                                       style={'margin': '4px', 'width': 'calc(100% - 8px)'})
                             for i, name in enumerate(RHS_EXAMPLES.keys())
                         ]
                     )
                 ], style={'padding': '8px 12px', 'backgroundColor': '#FFFFFF', 'borderRadius': '8px', 'border': '1px solid #D1D9E6', 'marginTop': '10px'})
-            ], className='input-card', style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'})
-        ], style={'display': 'flex', 'justifyContent': 'space-between', 'padding': '15px'}),
+            ], className='input-card', style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top', 'boxSizing': 'border-box'})
+        ], style={'display': 'flex', 'justifyContent': 'space-between', 'padding': '15px', 'flexWrap': 'wrap'}),
         
         html.Div([
             html.Label('Начальное условие φ(0):'),
@@ -79,11 +83,12 @@ def create_input_panel():
             ),
         ], style={'padding': '15px 20px', 'textAlign': 'left', 'display': 'inline-block', 'width': 'auto'}),
 
-        html.Div(id='equation-display', style={'marginTop': '5px'}),
+        html.Div(id='equation-display', style={'marginTop': '5px', 'overflowX': 'auto'}),
         
         html.Div([
             html.Div([
-                html.H5('▼ Поддерживаемые функции и константы:', id='legend-toggle', style={'marginBottom': '8px'}),
+                html.H5('▼ Поддерживаемые функции и константы:', id='legend-toggle', 
+                       style={'marginBottom': '8px', 'cursor': 'pointer'}),
                 html.Div(id='legend-content', style={'display': 'none'}, children=[
                     html.P('✓ Ввод распознает синонимы функций, как asin, arsin, arcsin', 
                            style={'margin': '0 0 10px 0', 'color': '#7F8C8D', 'fontSize': '0.8em', 'fontStyle': 'italic'}),
@@ -111,7 +116,7 @@ def create_input_panel():
                             html.P('alpha, beta, gamma, delta, epsilon, zeta, eta, theta, iota, kappa, lambda, mu, nu, xi, pi, rho, sigma, tau, upsilon, phi, chi, psi, omega', 
                                    style={'margin': '0 0 8px 0', 'fontSize': '0.75em'}),
                         ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
-                    ]),
+                    ], style={'flexWrap': 'wrap'}),
                 ]),
             ], style={'padding': '10px', 'backgroundColor': '#FFFFFF', 'borderRadius': '8px', 'marginTop': '15px', 'border': '1px solid #D1D9E6'})
         ]),

@@ -392,3 +392,439 @@ button:active {
 .p-10 {
     padding: 10px;
 }
+
+/* Добавьте это в ваш CSS файл после существующих стилей */
+
+/* ========== АДАПТИВНАЯ ВЕРСТКА ========== */
+
+/* Планшеты и маленькие ноутбуки (до 1200px) */
+@media (max-width: 1200px) {
+    body {
+        margin: 10px;
+    }
+    
+    h1 {
+        font-size: 1.8em;
+        margin-bottom: 20px;
+    }
+    
+    #equation-display {
+        width: 80%;
+        font-size: 0.9em;
+    }
+    
+    .input-card {
+        padding: 10px;
+    }
+}
+
+/* Планшеты (до 992px) */
+@media (max-width: 992px) {
+    body {
+        margin: 10px;
+    }
+    
+    /* Переводим панели ввода в колонку */
+    .input-card {
+        width: 100% !important;
+        margin-right: 0 !important;
+        margin-bottom: 15px;
+    }
+    
+    #kernel-input, #rhs-input {
+        font-size: 14px;
+    }
+    
+    /* Результаты тоже в колонку */
+    .graph-card {
+        width: 100% !important;
+        margin-right: 0 !important;
+        margin-bottom: 20px;
+    }
+    
+    h3 {
+        font-size: 1.2em;
+    }
+    
+    #equation-display {
+        width: 95%;
+        font-size: 0.85em;
+        overflow-x: auto;
+    }
+    
+    #equation-display div {
+        font-size: 0.9em;
+    }
+    
+    .example-button {
+        width: 100%;
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+    
+    /* Кнопка истории */
+    #history-toggle-btn {
+        width: 40px !important;
+        height: 40px !important;
+        top: 10px;
+        right: 10px;
+    }
+    
+    #history-toggle-btn img {
+        width: 24px !important;
+        height: 24px !important;
+    }
+    
+    /* Модальное окно истории */
+    #history-modal > div {
+        width: 95%;
+        margin: 20px auto;
+    }
+    
+    #history-list {
+        max-height: 400px;
+    }
+}
+
+/* Телефоны (до 768px) */
+@media (max-width: 768px) {
+    body {
+        margin: 8px;
+    }
+    
+    h1 {
+        font-size: 1.4em;
+        margin-bottom: 15px;
+    }
+    
+    h3 {
+        font-size: 1.1em;
+    }
+    
+    label {
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+    
+    /* Поля ввода */
+    textarea {
+        font-size: 14px !important;
+        min-height: 80px !important;
+    }
+    
+    #kernel-input, #rhs-input {
+        font-size: 14px;
+    }
+    
+    input[type="number"] {
+        font-size: 14px;
+        padding: 8px !important;
+    }
+    
+    /* Карточки */
+    .input-card, .graph-card {
+        padding: 12px;
+        border-radius: 10px;
+    }
+    
+    /* Кнопка решения */
+    #solve-button {
+        width: 160px;
+        padding: 10px 16px;
+        font-size: 14px;
+        margin: 15px auto;
+    }
+    
+    #solve-button:active {
+        transform: scale(0.98);
+    }
+    
+    /* Панель начального условия */
+    #initial-condition {
+        width: 100px !important;
+    }
+    
+    /* Уравнение */
+    #equation-display {
+        width: 100%;
+        padding: 8px;
+        font-size: 0.8em;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    #equation-display div {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
+    }
+    
+    #equation-display span {
+        font-size: 0.9em !important;
+    }
+    
+    /* Графики */
+    .js-plotly-plot {
+        height: 300px !important;
+    }
+    
+    .js-plotly-plot .plotly {
+        height: 300px !important;
+    }
+    
+    /* Блок аналитического решения */
+    #analytical-solution-display {
+        padding: 15px !important;
+        font-size: 0.9em !important;
+    }
+    
+    #analytical-solution-display span {
+        font-size: 1em !important;
+    }
+    
+    /* Примеры */
+    .example-toggle {
+        font-size: 0.85em;
+        padding: 8px 10px;
+    }
+    
+    .example-button {
+        font-size: 11px;
+        padding: 8px 8px;
+        margin: 4px 0;
+        border-radius: 12px;
+    }
+    
+    /* Легенда */
+    #legend-content div {
+        display: block !important;
+    }
+    
+    #legend-content > div > div {
+        width: 100% !important;
+        margin-bottom: 15px;
+    }
+    
+    /* Ошибки и сообщения */
+    .error-message, .status-message {
+        font-size: 13px;
+        padding: 8px;
+    }
+    
+    .error-text {
+        max-width: 95%;
+        font-size: 0.85em;
+        margin: 10px auto;
+    }
+    
+    /* Панель настроек графиков */
+    #sections-x-min, #sections-x-max,
+    #surf-x-min, #surf-x-max,
+    #surf-t-min, #surf-t-max {
+        width: 60px !important;
+        font-size: 12px;
+    }
+    
+    [style*="display: inline-block"] {
+        display: flex !important;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    /* Кнопки обновления графиков */
+    #update-sections-btn, #update-surf-btn {
+        margin-top: 10px !important;
+        padding: 8px 12px !important;
+    }
+    
+    /* История */
+    #history-modal > div {
+        width: 98%;
+        margin: 10px auto;
+        border-radius: 12px;
+    }
+    
+    .history-item {
+        padding: 10px !important;
+    }
+    
+    .history-item button {
+        padding: 6px !important;
+    }
+    
+    .history-item button img {
+        width: 16px !important;
+        height: 16px !important;
+    }
+    
+    #clear-history-btn {
+        width: 130px;
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+    
+    /* Максимальная ошибка */
+    #max-error-display div div {
+        font-size: 0.9em !important;
+        padding: 8px 16px !important;
+    }
+}
+
+/* Маленькие телефоны (до 480px) */
+@media (max-width: 480px) {
+    body {
+        margin: 5px;
+    }
+    
+    h1 {
+        font-size: 1.2em;
+        margin-bottom: 12px;
+    }
+    
+    h3 {
+        font-size: 1em;
+    }
+    
+    label {
+        font-size: 12px;
+    }
+    
+    textarea {
+        font-size: 12px !important;
+        min-height: 70px !important;
+    }
+    
+    .input-card, .graph-card {
+        padding: 10px;
+    }
+    
+    #solve-button {
+        width: 140px;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    
+    #equation-display span {
+        font-size: 0.8em !important;
+    }
+    
+    .js-plotly-plot {
+        height: 250px !important;
+    }
+    
+    .js-plotly-plot .plotly {
+        height: 250px !important;
+    }
+    
+    #analytical-solution-display {
+        padding: 10px !important;
+    }
+    
+    #analytical-solution-display span {
+        font-size: 0.85em !important;
+    }
+    
+    .example-toggle {
+        font-size: 0.8em;
+        padding: 6px 8px;
+    }
+    
+    .example-button {
+        font-size: 10px;
+        padding: 6px 8px;
+    }
+    
+    #history-list {
+        max-height: 350px;
+        padding: 10px;
+    }
+    
+    .history-item div:first-child {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .history-item button {
+        padding: 5px !important;
+    }
+    
+    #close-history-modal {
+        font-size: 20px;
+    }
+}
+
+/* Альбомная ориентация на телефонах */
+@media (max-width: 768px) and (orientation: landscape) {
+    body {
+        margin: 10px;
+    }
+    
+    h1 {
+        font-size: 1.3em;
+        margin-bottom: 10px;
+    }
+    
+    .input-card {
+        width: 48% !important;
+        display: inline-block !important;
+        margin-right: 2% !important;
+    }
+    
+    .graph-card {
+        width: 48% !important;
+        display: inline-block !important;
+        margin-right: 2% !important;
+    }
+    
+    .js-plotly-plot {
+        height: 200px !important;
+    }
+    
+    #history-list {
+        max-height: 300px;
+    }
+}
+
+/* Для экранов с высоким разрешением */
+@media (min-width: 1400px) {
+    body {
+        margin: 30px;
+        max-width: 1400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    h1 {
+        font-size: 2.5em;
+    }
+    
+    .input-card, .graph-card {
+        padding: 20px;
+    }
+}
+
+/* Улучшения для touch-устройств */
+@media (hover: none) and (pointer: coarse) {
+    button, 
+    .example-button,
+    #history-toggle-btn,
+    [id*="load-solution"],
+    [id*="delete-solution"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .example-button {
+        min-height: 36px;
+    }
+    
+    button:active {
+        transform: scale(0.97);
+    }
+    
+    input, textarea, select {
+        font-size: 16px !important; /* Предотвращает зумирование на iOS */
+    }
+}
