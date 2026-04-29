@@ -159,7 +159,6 @@ def preprocess_expression(expr):
     return expr
 
 def process_power_after_function(expr):
-    
     pattern = r'([a-zA-Z_][a-zA-Z0-9_]*\s*\([^)]*\))\s*\^\s*([0-9]+(?:\.[0-9]+)?)'
     
     def replace_power(match):
@@ -181,7 +180,6 @@ def process_power_after_function(expr):
     return expr
 
 def process_sqrt(expr):
-  
     pattern = r'sqrt\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)'
     
     def replace_sqrt(match):
@@ -227,8 +225,47 @@ def safe_eval_with_checks(expr, namespace, test_value=0.5):
         else:
             raise ValueError("Некорректное математическое выражение")
 
+def process_arccot(expr):
+    expr = re.sub(r'arccot\(([^)]+)\)', r'np.arctan(1/\1)', expr)
+    expr = re.sub(r'arcctg\(([^)]+)\)', r'np.arctan(1/\1)', expr)
+    expr = re.sub(r'acot\(([^)]+)\)', r'np.arctan(1/\1)', expr)
+    return expr
+
+def process_arcsec(expr):
+    expr = re.sub(r'arcsec\(([^)]+)\)', r'np.arccos(1/\1)', expr)
+    expr = re.sub(r'asec\(([^)]+)\)', r'np.arccos(1/\1)', expr)
+    return expr
+
+def process_arccsc(expr):
+    expr = re.sub(r'arccsc\(([^)]+)\)', r'np.arcsin(1/\1)', expr)
+    expr = re.sub(r'acsc\(([^)]+)\)', r'np.arcsin(1/\1)', expr)
+    expr = re.sub(r'arccosec\(([^)]+)\)', r'np.arcsin(1/\1)', expr)
+    return expr
+
+def process_arcoth(expr):
+    expr = re.sub(r'arcoth\(([^)]+)\)', r'np.arctanh(1/\1)', expr)
+    expr = re.sub(r'acoth\(([^)]+)\)', r'np.arctanh(1/\1)', expr)
+    expr = re.sub(r'arcth\(([^)]+)\)', r'np.arctanh(1/\1)', expr)
+    return expr
+
+def process_arsech(expr):
+    expr = re.sub(r'arsech\(([^)]+)\)', r'np.arccosh(1/\1)', expr)
+    expr = re.sub(r'asech\(([^)]+)\)', r'np.arccosh(1/\1)', expr)
+    expr = re.sub(r'arsch\(([^)]+)\)', r'np.arccosh(1/\1)', expr)
+    return expr
+
+def process_arcsch(expr):
+    expr = re.sub(r'arcsch\(([^)]+)\)', r'np.arcsinh(1/\1)', expr)
+    expr = re.sub(r'acsch\(([^)]+)\)', r'np.arcsinh(1/\1)', expr)
+    expr = re.sub(r'arcosech\(([^)]+)\)', r'np.arcsinh(1/\1)', expr)
+    return expr
+
+def process_log_base(expr):
+    pattern = r'log\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)'
+    expr = re.sub(pattern, r'np.log(\2)/np.log(\1)', expr)
+    return expr
+
 def validate_expression_detailed(expr_str, variables=['x', 't']):
-    """Подробная валидация выражения с возвратом понятного сообщения"""
     if not expr_str or expr_str.strip() == '':
         return False, "Поле не может быть пустым"
     
@@ -246,32 +283,25 @@ def validate_expression_detailed(expr_str, variables=['x', 't']):
             return True, ""
         
         expr = preprocess_expression(expr)
-        
         expr = process_power_after_function(expr)
-        
         expr = re.sub(r'e\^\(([^)]+)\)', r'np.exp(\1)', expr)
         expr = re.sub(r'e\^([a-zA-Z0-9α-ω]+)', r'np.exp(\1)', expr)
         expr = re.sub(r'e\^\(-([^)]+)\)', r'np.exp(-\1)', expr)
-        
         expr = process_sqrt(expr)
+        
+        expr = process_arccot(expr)
+        expr = process_arcsec(expr)
+        expr = process_arccsc(expr)
+        expr = process_arcoth(expr)
+        expr = process_arsech(expr)
+        expr = process_arcsch(expr)
+        expr = process_log_base(expr)
         
         for func_name, np_func in FUNCTION_SYNONYMS.items():
             pattern = r'(?<!np\.)\b' + re.escape(func_name) + r'\s*\('
             
             if np_func in ['1/np.tan', '1/np.cosh', '1/np.sinh', '1/np.tanh']:
                 expr = re.sub(pattern, np_func + '(', expr)
-            elif func_name in ['arcsec', 'asec']:
-                expr = re.sub(pattern, r'np.arccos(1/', expr)
-            elif func_name in ['arccsc', 'acsc', 'arccosec']:
-                expr = re.sub(pattern, r'np.arcsin(1/', expr)
-            elif func_name in ['arccot', 'arcctg', 'acot', 'actg']:
-                expr = re.sub(pattern, r'np.arctan(1/', expr)
-            elif func_name in ['arcoth', 'acoth', 'arcth']:
-                expr = re.sub(pattern, r'np.arctanh(1/', expr)
-            elif func_name in ['arsech', 'asech', 'arsch']:
-                expr = re.sub(pattern, r'np.arccosh(1/', expr)
-            elif func_name in ['arcsch', 'acsch', 'arcosech']:
-                expr = re.sub(pattern, r'np.arcsinh(1/', expr)
             else:
                 expr = re.sub(pattern, np_func + '(', expr)
         
@@ -279,7 +309,6 @@ def validate_expression_detailed(expr_str, variables=['x', 't']):
             expr = re.sub(r'\b' + re.escape(const) + r'\b', replacement, expr)
         
         expr = re.sub(r'([a-zA-Z0-9α-ω\(\)]+)\^([a-zA-Z0-9α-ω\(\)]+)', r'(\1)**(\2)', expr)
-        
         expr = re.sub(r'\s+', '', expr)
         
         if expr.count('(') != expr.count(')'):
@@ -329,7 +358,6 @@ def validate_expression_detailed(expr_str, variables=['x', 't']):
             return False, "Некорректное математическое выражение"
 
 def parse_user_input(expr_str, variables=['x', 't']):
-    """Основная функция парсинга пользовательского ввода"""
     if not expr_str or expr_str.strip() == '':
         raise ValueError("Выражение не может быть пустым")
     
@@ -348,32 +376,25 @@ def parse_user_input(expr_str, variables=['x', 't']):
     
     try:
         expr = preprocess_expression(expr)
-        
         expr = process_power_after_function(expr)
-        
         expr = re.sub(r'e\^\(([^)]+)\)', r'np.exp(\1)', expr)
         expr = re.sub(r'e\^([a-zA-Z0-9α-ω]+)', r'np.exp(\1)', expr)
         expr = re.sub(r'e\^\(-([^)]+)\)', r'np.exp(-\1)', expr)
-        
         expr = process_sqrt(expr)
+        
+        expr = process_arccot(expr)
+        expr = process_arcsec(expr)
+        expr = process_arccsc(expr)
+        expr = process_arcoth(expr)
+        expr = process_arsech(expr)
+        expr = process_arcsch(expr)
+        expr = process_log_base(expr)
         
         for func_name, np_func in FUNCTION_SYNONYMS.items():
             pattern = r'(?<!np\.)\b' + re.escape(func_name) + r'\s*\('
             
             if np_func in ['1/np.tan', '1/np.cosh', '1/np.sinh', '1/np.tanh']:
                 expr = re.sub(pattern, np_func + '(', expr)
-            elif func_name in ['arcsec', 'asec']:
-                expr = re.sub(pattern, r'np.arccos(1/', expr)
-            elif func_name in ['arccsc', 'acsc', 'arccosec']:
-                expr = re.sub(pattern, r'np.arcsin(1/', expr)
-            elif func_name in ['arccot', 'arcctg', 'acot', 'actg']:
-                expr = re.sub(pattern, r'np.arctan(1/', expr)
-            elif func_name in ['arcoth', 'acoth', 'arcth']:
-                expr = re.sub(pattern, r'np.arctanh(1/', expr)
-            elif func_name in ['arsech', 'asech', 'arsch']:
-                expr = re.sub(pattern, r'np.arccosh(1/', expr)
-            elif func_name in ['arcsch', 'acsch', 'arcosech']:
-                expr = re.sub(pattern, r'np.arcsinh(1/', expr)
             else:
                 expr = re.sub(pattern, np_func + '(', expr)
         
@@ -415,6 +436,11 @@ def format_for_display(expr, is_kernel=True):
     
     result = result.replace('1/tan', 'cot')
     result = result.replace('arctan(1/', 'arcctg(')
+    result = result.replace('arccos(1/', 'arcsec(')
+    result = result.replace('arcsin(1/', 'arccsc(')
+    result = result.replace('arctanh(1/', 'arcoth(')
+    result = result.replace('arccosh(1/', 'arsech(')
+    result = result.replace('arcsinh(1/', 'arcsch(')
     
     if is_kernel:
         return f"K(x,t) = {result}"
@@ -422,9 +448,24 @@ def format_for_display(expr, is_kernel=True):
         return f"f(x) = {result}"
 
 def validate_expression(expr_str, variables=['x', 't']):
-    """Валидация выражения"""
     try:
         parse_user_input(expr_str, variables)
         return True, "Выражение корректно"
     except ValueError as e:
         return False, str(e)
+
+# ============= ДОБАВЛЕННАЯ ФУНКЦИЯ =============
+def format_equation_beautifully(kernel_expr, rhs_expr):
+    from dash import html
+    
+    if not kernel_expr or not rhs_expr:
+        return html.Div("Введите выражения для ядра K(x,t) и правой части f(x)", 
+                       style={'color': '#7F8C8D', 'fontStyle': 'italic', 'textAlign': 'center'})
+    
+    return html.Div([
+        html.Span("φ'(x) = ", style={'fontWeight': 'bold', 'color': '#2C3E50', 'fontSize': '1.2em'}),
+        html.Span(rhs_expr, style={'color': '#E74C3C', 'fontFamily': 'monospace', 'fontSize': '1.2em'}),
+        html.Span(" + ∫₀ˣ ", style={'fontWeight': 'bold', 'color': '#2C3E50', 'fontSize': '1.2em'}),
+        html.Span(kernel_expr, style={'color': '#34495E', 'fontFamily': 'monospace', 'fontSize': '1.2em'}),
+        html.Span(" · φ(t) dt", style={'fontWeight': 'bold', 'color': '#2C3E50', 'fontSize': '1.2em'}),
+    ], style={'textAlign': 'center'})

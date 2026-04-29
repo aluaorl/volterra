@@ -1,0 +1,125 @@
+/* ========== АДАПТИВНАЯ ВЕРСТКА ========== */
+
+/* Планшеты (до 992px) */
+@media (max-width: 992px) {
+  .input-card {
+    width: 100% !important;
+    margin-right: 0 !important;
+    margin-bottom: 15px;
+  }
+
+  .graph-card {
+    width: 100% !important;
+    margin-right: 0 !important;
+    margin-bottom: 20px;
+  }
+
+  #equation-display {
+    width: 95%;
+    font-size: 0.85em;
+  }
+
+  .example-button {
+    width: 53%;
+  }
+
+  #history-toggle-btn {
+    width: 40px !important;
+    height: 40px !important;
+    top: 10px;
+    right: 10px;
+  }
+}
+
+/* Телефоны (до 768px) */
+@media (max-width: 768px) {
+  body {
+    margin: 8px;
+  }
+
+  h1 {
+    font-size: 1.4em;
+    margin-bottom: 15px;
+  }
+
+  textarea {
+    font-size: 14px !important;
+    min-height: 80px !important;
+  }
+
+  .input-card,
+  .graph-card {
+    padding: 12px;
+  }
+
+  #solve-button {
+    width: 160px;
+    padding: 10px 16px;
+  }
+
+  #equation-display {
+    width: 100%;
+    font-size: 0.8em;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .js-plotly-plot {
+    height: 300px !important;
+  }
+
+  #analytical-solution-display {
+    padding: 15px !important;
+    font-size: 0.9em !important;
+  }
+
+  .example-toggle {
+    font-size: 0.85em;
+    padding: 8px 10px;
+  }
+
+  #legend-content > div > div {
+    width: 100% !important;
+    margin-bottom: 15px;
+  }
+
+  #history-list {
+    max-height: 400px;
+  }
+}
+
+/* Маленькие телефоны (до 480px) */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.2em;
+  }
+
+  textarea {
+    font-size: 12px !important;
+  }
+
+  #solve-button {
+    width: 140px;
+  }
+
+  .js-plotly-plot {
+    height: 250px !important;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  button,
+  .example-button,
+  #history-toggle-btn,
+  [id*="load-solution"],
+  [id*="delete-solution"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

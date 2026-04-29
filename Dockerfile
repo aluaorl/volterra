@@ -1,22 +1,22 @@
-FROM python:3.11.9
+FROM python:3.11-slim
 
-COPY ./requirements.txt /requirements.txt
+WORKDIR /app
 
-RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Копируем requirements.txt и устанавливаем зависимости
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir gunicorn
 
-RUN pip3 install --no-cache-dir -r /requirements.txt
-RUN pip3 install gunicorn
+# Копируем все файлы проекта
+COPY . .
 
-COPY ./app.py /code/
-COPY ./calculation_engine.py /code/
-COPY ./expression_parser.py /code/
-COPY ./components /code/components/
-RUN mkdir /code/assets
-COPY ./assets/ /code/assets/
+# Убеждаемся, что папка assets существует
+RUN mkdir -p assets
 
-WORKDIR /code/
-ENV PYTHONPATH /code
+# Устанавливаем переменные окружения
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
 
-ENV GUNICORN_CMD_ARGS "--bind=0.0.0.0:8000 --workers=2 --threads=4 --worker-class=gthread --timeout=300 --forwarded-allow-ips='*' --access-logfile -"
-
-CMD ["gunicorn", "app:server"]
+# Запуск приложения
+CMD ["gunicorn", "app:server", "--bind", "0.0.0.0:7860", "--workers", "1", "--threads", "2", "--timeout", "300", "--access-logfile", "-", "--error-logfile", "-"]

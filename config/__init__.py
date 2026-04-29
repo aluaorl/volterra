@@ -1,0 +1,3 @@
+from .examples import KERNEL_EXAMPLES, RHS_EXAMPLES
+
+__all__ = ['KERNEL_EXAMPLES', 'RHS_EXAMPLES']
