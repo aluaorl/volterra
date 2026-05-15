@@ -22,15 +22,12 @@ def _pattern_button_index(ctx):
     triggered = ctx.triggered[0]
     prop_id = triggered['prop_id']
     
-    # Парсим JSON из prop_id
     try:
-        # Убираем ".n_clicks" в конце
         if '.n_clicks' in prop_id:
             json_str = prop_id.rsplit('.', 1)[0]
         else:
             json_str = prop_id
         
-        # Парсим JSON
         if json_str.startswith('{') and json_str.endswith('}'):
             data = json.loads(json_str)
             return data.get('index')
@@ -41,7 +38,82 @@ def _pattern_button_index(ctx):
 
 def register_callbacks(app):
     
-    # Callback для сброса результатов при изменении входных данных
+    # ==================== ОБЩИЙ CALLBACK ДЛЯ УПРАВЛЕНИЯ КНОПКОЙ ====================
+    @app.callback(
+        [Output('solve-button', 'disabled'),
+         Output('solve-button', 'title'),
+         Output('solve-button', 'children'),
+         Output('loading-indicator', 'style'),
+         Output('error-message', 'children'),
+         Output('error-message', 'style')],
+        [Input('kernel-input', 'value'),
+         Input('rhs-input', 'value'),
+         Input('solve-button', 'n_clicks')],
+        [State('initial-condition', 'value')],
+        prevent_initial_call=False
+    )
+    def manage_button_and_loading(kernel_expr, rhs_expr, n_clicks, initial_condition):
+        ctx = callback_context
+        
+        # Проверяем валидность выражений
+        kernel_valid = True
+        rhs_valid = True
+        kernel_error = ""
+        rhs_error = ""
+        
+        if kernel_expr and kernel_expr.strip():
+            valid, msg = validate_expression_detailed(kernel_expr, ['x', 't'])
+            if not valid:
+                kernel_valid = False
+                kernel_error = msg
+        else:
+            kernel_valid = False
+            kernel_error = "поле ядра пусто"
+        
+        if rhs_expr and rhs_expr.strip():
+            valid, msg = validate_expression_detailed(rhs_expr, ['x'])
+            if not valid:
+                rhs_valid = False
+                rhs_error = msg
+        else:
+            rhs_valid = False
+            rhs_error = "поле правой части пусто"
+        
+        # Формируем сообщение об ошибке
+        error_text = ""
+        if not kernel_valid or not rhs_valid:
+            if not kernel_valid and not rhs_valid:
+                error_text = f"Ошибки: K(x,t): {kernel_error}, f(x): {rhs_error}"
+            elif not kernel_valid:
+                error_text = f"Ошибка в ядре K(x,t): {kernel_error}"
+            else:
+                error_text = f"Ошибка в правой части f(x): {rhs_error}"
+        
+        is_valid = kernel_valid and rhs_valid
+        
+        # Определяем триггер
+        triggered_id = None
+        if ctx.triggered:
+            triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        
+        # Если нажата кнопка и поля валидны - показываем загрузку
+        if triggered_id == 'solve-button' and n_clicks and is_valid:
+            return (True, "Решается...", "Решение...", 
+                    {'display': 'block', 'marginTop': '20px', 'textAlign': 'center'},
+                    "", {'display': 'none'})
+        
+        # Иначе - нормальное состояние
+        button_title = "Решить уравнение" if is_valid else "Исправьте ошибки"
+        button_disabled = not is_valid
+        
+        if error_text:
+            return (button_disabled, button_title, "Решить уравнение", 
+                    {'display': 'none'}, error_text, {'display': 'block'})
+        else:
+            return (button_disabled, button_title, "Решить уравнение", 
+                    {'display': 'none'}, "", {'display': 'none'})
+    
+    # ==================== CALLBACK ДЛЯ ВЫЧИСЛЕНИЙ ====================
     @app.callback(
         [Output('analytical-solution-display', 'children'),
          Output('guess-accuracy', 'children'),
@@ -51,7 +123,142 @@ def register_callbacks(app):
          Output('max-error-display', 'style'),
          Output('volterra-graph', 'figure'),
          Output('derivative-plot', 'figure'),
-         Output('error-output', 'children')],
+         Output('error-output', 'children'),
+         Output('kernel-sections-plot', 'figure'),
+         Output('kernel-3d-plot', 'figure'),
+         Output('solutions-history', 'data'),
+         Output('solve-button', 'disabled', allow_duplicate=True),
+         Output('solve-button', 'children', allow_duplicate=True),
+         Output('loading-indicator', 'style', allow_duplicate=True)],
+        [Input('solve-button', 'n_clicks')],
+        [State('kernel-input', 'value'),
+         State('rhs-input', 'value'),
+         State('initial-condition', 'value'),
+         State('sections-x-min', 'value'),
+         State('sections-x-max', 'value'),
+         State('surf-x-min', 'value'),
+         State('surf-x-max', 'value'),
+         State('surf-t-min', 'value'),
+         State('surf-t-max', 'value'),
+         State('solutions-history', 'data')],
+        prevent_initial_call=True
+    )
+    def compute_solution(n_clicks, kernel_expr, rhs_expr, initial_condition,
+                         sec_x_min, sec_x_max, surf_x_min, surf_x_max, surf_t_min, surf_t_max,
+                         history_data):
+        if not n_clicks:
+            raise PreventUpdate
+        
+        if not kernel_expr or not rhs_expr:
+            raise PreventUpdate
+        
+        try:
+            (x_vals, phi_numerical, phi_reference, derivative_numerical, 
+             derivative_exact, error_text, computation_time, _) = run_volterra_solution(
+                kernel_expr, rhs_expr, initial_condition or 0, 1000, 200)
+            
+            # График решения
+            fig_solution = go.Figure()
+            fig_solution.add_trace(go.Scatter(x=x_vals, y=phi_reference, mode='lines', name='Эталон',
+                                              line=dict(color='#E74C3C', width=2)))
+            fig_solution.add_trace(go.Scatter(x=x_vals, y=phi_numerical, mode='lines', name='Численное',
+                                              line=dict(color='#2C3E50', dash='dash', width=1.5)))
+            fig_solution.update_layout(
+                xaxis_title='x', yaxis_title='φ(x)', hovermode='x unified',
+                template='plotly_white', height=400, showlegend=True,
+                plot_bgcolor='white', paper_bgcolor='white',
+                font=dict(family="Roboto, sans-serif", size=12, color="#2C3E50")
+            )
+            
+            # График производной
+            fig_derivative = go.Figure()
+            fig_derivative.add_trace(go.Scatter(x=x_vals, y=derivative_numerical, mode='lines', name="φ'(x) (численная)",
+                                                line=dict(color='#34495E', width=2)))
+            fig_derivative.add_trace(go.Scatter(x=x_vals, y=derivative_exact, mode='lines', 
+                                                name='f(x) + I(x) (точная)',
+                                                line=dict(color='#E74C3C', dash='dash', width=1.5)))
+            fig_derivative.update_layout(
+                xaxis_title='x', yaxis_title="φ'(x)", hovermode='x unified',
+                template='plotly_white', height=400, showlegend=True,
+                plot_bgcolor='white', paper_bgcolor='white',
+                font=dict(family="Roboto, sans-serif", size=12, color="#2C3E50")
+            )
+            
+            # Графики ядра
+            fig_sections = build_sections_plot(kernel_expr, sec_x_min, sec_x_max)
+            fig_surface = build_surface_plot(kernel_expr, surf_x_min, surf_x_max, surf_t_min, surf_t_max)
+            
+            # Подбор формулы
+            formula = fit_analytical_formula(x_vals, phi_numerical)
+            
+            if formula:
+                display_html = html.Div([
+                    html.Span("φ(x) = ", style={'fontWeight': 'bold', 'color': '#2C3E50'}),
+                    html.Span(formula, style={'color': '#2C3E50', 'fontFamily': 'monospace', 'fontWeight': 'bold'})
+                ])
+            else:
+                points = [0, 0.2, 0.4, 0.6, 0.8, 1.0]
+                values = []
+                for xp in points:
+                    idx = int(xp * len(x_vals))
+                    if idx < len(phi_numerical):
+                        values.append(html.Div(f"φ({xp}) = {phi_numerical[idx]:.6f}"))
+                display_html = html.Div([
+                    html.Span("Численное решение:", style={'fontWeight': 'bold'}),
+                    html.Div(values, style={'marginTop': '10px', 'padding': '10px', 
+                                           'backgroundColor': '#F5F7FA', 'borderRadius': '8px'})
+                ])
+            
+            max_error_display = html.Div(error_text, style={'fontWeight': 'bold', 'color': '#C0392B', 
+                                                           'textAlign': 'center', 'padding': '12px'})
+            status_message = html.Div([
+                html.Span("Вычисление успешно завершено! ", style={'fontWeight': 'bold', 'color': '#27ae60'}),
+                html.Span(f"Время: {computation_time:.2f} с", style={'color': '#7F8C8D'})
+            ], style={'textAlign': 'center', 'margin': '10px'})
+            
+            # Сохраняем в историю
+            new_record = {
+                'id': str(uuid.uuid4()),
+                'timestamp': time.strftime("%H:%M:%S"),
+                'date': time.strftime("%d.%m.%Y"),
+                'kernel': kernel_expr,
+                'rhs': rhs_expr,
+                'initial_condition': initial_condition or 0,
+            }
+            history = [r for r in (history_data or []) if isinstance(r, dict) and r.get('id')]
+            new_history = [new_record] + history[:19]
+            
+            return (display_html, "", status_message, {'textAlign': 'center', 'margin': '10px'},
+                    max_error_display, {'display': 'block'},
+                    fig_solution, fig_derivative, error_text,
+                    fig_sections, fig_surface,
+                    new_history,
+                    False, 'Решить уравнение', {'display': 'none'})
+            
+        except Exception as e:
+            error_msg = str(e)
+            empty_fig = create_empty_figure()
+            error_status = html.Div(f"Ошибка: {error_msg}", style={'color': '#E74C3C', 'textAlign': 'center'})
+            
+            return (html.Div(f"Ошибка: {error_msg}", style={'color': '#E74C3C'}), "", 
+                    error_status, {'textAlign': 'center'}, html.Div(""), {'display': 'none'},
+                    empty_fig, empty_fig, "Ошибка вычислений", empty_fig, empty_fig,
+                    no_update,
+                    False, 'Решить уравнение', {'display': 'none'})
+    
+    # ==================== ОСТАЛЬНЫЕ CALLBACK-И ====================
+    
+    # Callback для сброса результатов при изменении входных данных
+    @app.callback(
+        [Output('analytical-solution-display', 'children', allow_duplicate=True),
+         Output('guess-accuracy', 'children', allow_duplicate=True),
+         Output('status-message', 'children', allow_duplicate=True),
+         Output('status-message', 'style', allow_duplicate=True),
+         Output('max-error-display', 'children', allow_duplicate=True),
+         Output('max-error-display', 'style', allow_duplicate=True),
+         Output('volterra-graph', 'figure', allow_duplicate=True),
+         Output('derivative-plot', 'figure', allow_duplicate=True),
+         Output('error-output', 'children', allow_duplicate=True)],
         [Input('kernel-input', 'value'),
          Input('rhs-input', 'value'),
          Input({'type': 'kernel-example', 'index': ALL}, 'n_clicks'),
@@ -66,19 +273,6 @@ def register_callbacks(app):
         triggered_id = ctx.triggered[0]['prop_id']
         empty_display = html.Div("Нажмите 'Решить уравнение'", style={'color': '#7F8C8D'})
         empty_fig = create_empty_figure()
-        
-        if 'kernel-example' in triggered_id or 'rhs-example' in triggered_id:
-            return (empty_display, "", "", {'display': 'none'}, 
-                    html.Div(""), {'display': 'none'}, empty_fig, empty_fig, "")
-        
-        if 'kernel-input' in triggered_id or 'rhs-input' in triggered_id:
-            if kernel_val and rhs_val and kernel_val.strip() and rhs_val.strip():
-                kernel_valid, _ = validate_expression_detailed(kernel_val, ['x', 't'])
-                rhs_valid, _ = validate_expression_detailed(rhs_val, ['x'])
-                if kernel_valid and rhs_valid:
-                    waiting = html.Div("Нажмите 'Решить уравнение'", style={'color': '#7F8C8D'})
-                    return (waiting, "", "", {'display': 'none'}, 
-                            html.Div(""), {'display': 'none'}, empty_fig, empty_fig, "")
         
         return (empty_display, "", "", {'display': 'none'}, 
                 html.Div(""), {'display': 'none'}, empty_fig, empty_fig, "")
@@ -152,7 +346,6 @@ def register_callbacks(app):
         triggered_id = ctx.triggered[0]['prop_id']
         
         try:
-            # Парсим JSON
             if '.n_clicks' in triggered_id:
                 json_str = triggered_id.rsplit('.', 1)[0]
             else:
@@ -200,197 +393,6 @@ def register_callbacks(app):
                            style={'color': '#7F8C8D', 'fontStyle': 'italic', 'textAlign': 'center'})
         return format_equation_beautifully(kernel_expr, rhs_expr)
     
-    # Callback для валидации
-    @app.callback(
-        [Output('solve-button', 'disabled'),
-         Output('solve-button', 'title'),
-         Output('error-message', 'children'),
-         Output('error-message', 'style')],
-        [Input('kernel-input', 'value'),
-         Input('rhs-input', 'value')],
-        prevent_initial_call=False
-    )
-    def validate_inputs(kernel_expr, rhs_expr):
-        kernel_valid = True
-        rhs_valid = True
-        kernel_error = ""
-        rhs_error = ""
-        
-        if kernel_expr and kernel_expr.strip():
-            valid, msg = validate_expression_detailed(kernel_expr, ['x', 't'])
-            if not valid:
-                kernel_valid = False
-                kernel_error = msg
-        else:
-            kernel_valid = False
-            kernel_error = "поле ядра пусто"
-        
-        if rhs_expr and rhs_expr.strip():
-            valid, msg = validate_expression_detailed(rhs_expr, ['x'])
-            if not valid:
-                rhs_valid = False
-                rhs_error = msg
-        else:
-            rhs_valid = False
-            rhs_error = "поле правой части пусто"
-        
-        button_disabled = not (kernel_valid and rhs_valid)
-        button_title = "Решить уравнение" if not button_disabled else "Исправьте ошибки"
-        
-        if not kernel_valid or not rhs_valid:
-            error_text = f"Ошибки: K(x,t): {kernel_error}, f(x): {rhs_error}"
-            return button_disabled, button_title, error_text, {'display': 'block'}
-        
-        return button_disabled, button_title, "", {"display": "none"}
-    
-    # Основной callback для вычислений
-    @app.callback(
-        [Output('analytical-solution-display', 'children', allow_duplicate=True),
-         Output('guess-accuracy', 'children', allow_duplicate=True),
-         Output('status-message', 'children', allow_duplicate=True),
-         Output('status-message', 'style', allow_duplicate=True),
-         Output('max-error-display', 'children', allow_duplicate=True),
-         Output('max-error-display', 'style', allow_duplicate=True),
-         Output('volterra-graph', 'figure', allow_duplicate=True),
-         Output('derivative-plot', 'figure', allow_duplicate=True),
-         Output('error-output', 'children', allow_duplicate=True),
-         Output('kernel-sections-plot', 'figure', allow_duplicate=True),
-         Output('kernel-3d-plot', 'figure', allow_duplicate=True)],
-        [Input('solve-button', 'n_clicks')],
-        [State('kernel-input', 'value'),
-         State('rhs-input', 'value'),
-         State('initial-condition', 'value'),
-         State('sections-x-min', 'value'),
-         State('sections-x-max', 'value'),
-         State('surf-x-min', 'value'),
-         State('surf-x-max', 'value'),
-         State('surf-t-min', 'value'),
-         State('surf-t-max', 'value')],
-        prevent_initial_call=True
-    )
-    def compute_solution(n_clicks, kernel_expr, rhs_expr, initial_condition,
-                         sec_x_min, sec_x_max, surf_x_min, surf_x_max, surf_t_min, surf_t_max):
-        if not n_clicks:
-            raise PreventUpdate
-        
-        if not kernel_expr or not rhs_expr:
-            raise PreventUpdate
-        
-        try:
-            (x_vals, phi_numerical, phi_reference, derivative_numerical, 
-             derivative_exact, error_text, computation_time, _) = run_volterra_solution(
-                kernel_expr, rhs_expr, initial_condition or 0, 1000, 200)
-            
-            fig_solution = go.Figure()
-            fig_solution.add_trace(go.Scatter(x=x_vals, y=phi_reference, mode='lines', name='Эталон',
-                                              line=dict(color='#E74C3C', width=2)))
-            fig_solution.add_trace(go.Scatter(x=x_vals, y=phi_numerical, mode='lines', name='Численное',
-                                              line=dict(color='#2C3E50', dash='dash', width=1.5)))
-            fig_solution.update_layout(
-                xaxis_title='x', yaxis_title='φ(x)', hovermode='x unified',
-                template='plotly_white', height=400, showlegend=True,
-                plot_bgcolor='white', paper_bgcolor='white',
-                font=dict(family="Roboto, sans-serif", size=12, color="#2C3E50")
-            )
-            
-            fig_derivative = go.Figure()
-            fig_derivative.add_trace(go.Scatter(x=x_vals, y=derivative_numerical, mode='lines', name="φ'(x) (численная)",
-                                                line=dict(color='#34495E', width=2)))
-            fig_derivative.add_trace(go.Scatter(x=x_vals, y=derivative_exact, mode='lines', 
-                                                name='f(x) + I(x) (точная)',
-                                                line=dict(color='#E74C3C', dash='dash', width=1.5)))
-            fig_derivative.update_layout(
-                xaxis_title='x', yaxis_title="φ'(x)", hovermode='x unified',
-                template='plotly_white', height=400, showlegend=True,
-                plot_bgcolor='white', paper_bgcolor='white',
-                font=dict(family="Roboto, sans-serif", size=12, color="#2C3E50")
-            )
-            
-            fig_sections = build_sections_plot(kernel_expr, sec_x_min, sec_x_max)
-            fig_surface = build_surface_plot(kernel_expr, surf_x_min, surf_x_max, surf_t_min, surf_t_max)
-            
-            formula = fit_analytical_formula(x_vals, phi_numerical)
-            
-            if formula:
-                display_html = html.Div([
-                    html.Span("φ(x) = ", style={'fontWeight': 'bold', 'color': '#2C3E50'}),
-                    html.Span(formula, style={'color': '#2C3E50', 'fontFamily': 'monospace', 'fontWeight': 'bold'})
-                ])
-            else:
-                points = [0, 0.2, 0.4, 0.6, 0.8, 1.0]
-                values = []
-                for xp in points:
-                    idx = int(xp * len(x_vals))
-                    if idx < len(phi_numerical):
-                        values.append(html.Div(f"φ({xp}) = {phi_numerical[idx]:.6f}"))
-                display_html = html.Div([
-                    html.Span("Численное решение:", style={'fontWeight': 'bold'}),
-                    html.Div(values, style={'marginTop': '10px', 'padding': '10px', 
-                                           'backgroundColor': '#F5F7FA', 'borderRadius': '8px'})
-                ])
-            
-            max_error_display = html.Div(error_text, style={'fontWeight': 'bold', 'color': '#C0392B', 
-                                                           'textAlign': 'center', 'padding': '12px'})
-            status_message = html.Div([
-                html.Span("Вычисление успешно завершено! ", style={'fontWeight': 'bold'}),
-                html.Span(f"Время: {computation_time:.2f} с", style={'color': '#7F8C8D'})
-            ], style={'color': '#27ae60', 'textAlign': 'center'})
-            
-            return (display_html, "", status_message, {'textAlign': 'center', 'margin': '10px'},
-                    max_error_display, {'display': 'block'},
-                    fig_solution, fig_derivative, error_text,
-                    fig_sections, fig_surface)
-            
-        except Exception as e:
-            error_msg = str(e)
-            empty_fig = create_empty_figure()
-            error_status = html.Div(f"Ошибка: {error_msg}", style={'color': '#E74C3C', 'textAlign': 'center'})
-            return (html.Div(f"Ошибка: {error_msg}", style={'color': '#E74C3C'}), "", 
-                    error_status, {'textAlign': 'center'}, html.Div(""), {'display': 'none'},
-                    empty_fig, empty_fig, "Ошибка вычислений", empty_fig, empty_fig)
-    
-    # Callback для сохранения в историю (после успешного вычисления)
-    @app.callback(
-        Output('solutions-history', 'data', allow_duplicate=True),
-        [Input('solve-button', 'n_clicks')],
-        [State('kernel-input', 'value'), 
-         State('rhs-input', 'value'),
-         State('initial-condition', 'value'), 
-         State('solutions-history', 'data')],
-        prevent_initial_call=True
-    )
-    def save_to_history(n_clicks, kernel_expr, rhs_expr, initial_condition, history_data):
-        print(f"save_to_history called with n_clicks={n_clicks}")
-        
-        if not n_clicks:
-            raise PreventUpdate
-        
-        if not kernel_expr or not kernel_expr.strip():
-            raise PreventUpdate
-        if not rhs_expr or not rhs_expr.strip():
-            raise PreventUpdate
-        
-        kernel_valid, _ = validate_expression_detailed(kernel_expr, ['x', 't'])
-        rhs_valid, _ = validate_expression_detailed(rhs_expr, ['x'])
-        
-        if not kernel_valid or not rhs_valid:
-            raise PreventUpdate
-        
-        new_record = {
-            'id': str(uuid.uuid4()),
-            'timestamp': time.strftime("%H:%M:%S"),
-            'date': time.strftime("%d.%m.%Y"),
-            'kernel': kernel_expr,
-            'rhs': rhs_expr,
-            'initial_condition': initial_condition or 0,
-        }
-        
-        history = [r for r in (history_data or []) if isinstance(r, dict) and r.get('id')]
-        new_history = [new_record] + history[:19]
-        
-        print(f"Saved to history, total records: {len(new_history)}")
-        return new_history
-    
     # Callback для обновления списка истории
     @app.callback(
         Output('history-list', 'children'),
@@ -399,8 +401,6 @@ def register_callbacks(app):
         prevent_initial_call=False
     )
     def update_history_list(history_data, clear_clicks):
-        print(f"Updating history list, data: {history_data is not None}, clear_clicks: {clear_clicks}")
-        
         if clear_clicks:
             return html.Div("История пуста", style={'color': '#95A5A6', 'textAlign': 'center', 'padding': '20px'})
         
@@ -502,23 +502,19 @@ def register_callbacks(app):
             raise PreventUpdate
         
         if not history_data:
-            print("No history data")
             raise PreventUpdate
         
         solution_id = _pattern_button_index(ctx)
-        print(f"Loading solution with id: {solution_id}")
         
         if not solution_id:
             raise PreventUpdate
         
         for record in history_data:
             if str(record.get('id')) == str(solution_id):
-                print(f"Found record: {record.get('kernel')[:50]}...")
                 modal_closed = {'display': 'none'}
                 return (record.get('kernel'), record.get('rhs'), 
                        record.get('initial_condition', 0), 1, modal_closed)
         
-        print(f"Record with id {solution_id} not found")
         raise PreventUpdate
     
     # Callback для удаления из истории
@@ -541,13 +537,11 @@ def register_callbacks(app):
             raise PreventUpdate
         
         solution_id = _pattern_button_index(ctx)
-        print(f"Deleting solution with id: {solution_id}")
         
         if not solution_id:
             raise PreventUpdate
         
         new_history = [r for r in history_data if str(r.get('id')) != str(solution_id)]
-        print(f"Deleted, remaining records: {len(new_history)}")
         
         return new_history
     
@@ -559,31 +553,35 @@ def register_callbacks(app):
     )
     def clear_history(clicks):
         if clicks:
-            print("Clearing all history")
             return []
         raise PreventUpdate
     
-    # Callback для обновления графиков ядра
+    # ==================== КОМБИНИРОВАННЫЙ CALLBACK ДЛЯ ГРАФИКОВ ЯДРА ====================
+    # Объединяем оба выхода в один callback с allow_duplicate=True
     @app.callback(
-        Output('kernel-sections-plot', 'figure'),
-        [Input('update-sections-btn', 'n_clicks'), 
+        [Output('kernel-sections-plot', 'figure', allow_duplicate=True),
+         Output('kernel-3d-plot', 'figure', allow_duplicate=True)],
+        [Input('update-sections-btn', 'n_clicks'),
+         Input('update-surf-btn', 'n_clicks'),
          Input('kernel-input', 'value')],
-        [State('sections-x-min', 'value'), 
-         State('sections-x-max', 'value')],
-        prevent_initial_call=True
-    )
-    def update_sections(n_clicks, kernel_expr, x_min, x_max):
-        return build_sections_plot(kernel_expr, x_min, x_max)
-
-    @app.callback(
-        Output('kernel-3d-plot', 'figure'),
-        [Input('update-surf-btn', 'n_clicks'), 
-         Input('kernel-input', 'value')],
-        [State('surf-x-min', 'value'), 
+        [State('sections-x-min', 'value'),
+         State('sections-x-max', 'value'),
+         State('surf-x-min', 'value'),
          State('surf-x-max', 'value'),
-         State('surf-t-min', 'value'), 
+         State('surf-t-min', 'value'),
          State('surf-t-max', 'value')],
         prevent_initial_call=True
     )
-    def update_surface(n_clicks, kernel_expr, x_min, x_max, t_min, t_max):
-        return build_surface_plot(kernel_expr, x_min, x_max, t_min, t_max)
+    def update_kernel_plots(sections_click, surf_click, kernel_expr,
+                           sec_x_min, sec_x_max, surf_x_min, surf_x_max, surf_t_min, surf_t_max):
+        ctx = callback_context
+        if not ctx.triggered:
+            raise PreventUpdate
+        
+        triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        
+        # Всегда обновляем оба графика (или только тот, который изменился)
+        fig_sections = build_sections_plot(kernel_expr, sec_x_min, sec_x_max)
+        fig_surface = build_surface_plot(kernel_expr, surf_x_min, surf_x_max, surf_t_min, surf_t_max)
+        
+        return fig_sections, fig_surface

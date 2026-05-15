@@ -106,10 +106,17 @@ def create_input_panel():
             ], style={'padding': '12px', 'backgroundColor': '#FFFFFF', 'borderRadius': '8px', 'marginTop': '15px', 'border': '1px solid #D1D9E6'})
         ]),
         
-        html.Button('Решить уравнение', id='solve-button', disabled=True),
-        
-        html.Div([
-            html.Div(className='loader'),
-            html.P('Вычисление... Пожалуйста, подождите', style={'textAlign': 'center', 'marginTop': '10px'})
-        ], id='loading-indicator', style={'display': 'none', 'marginTop': '20px', 'textAlign': 'center'})
+        # В конце файла, где кнопка и лоадер, замените на:
+
+html.Button('Решить уравнение', id='solve-button', disabled=True),
+
+html.Div(
+    id='loading-indicator',
+    style={'display': 'none', 'marginTop': '20px', 'textAlign': 'center'},
+    children=[
+        html.Div(className='loader'),
+        html.P('Вычисление... Пожалуйста, подождите', 
+               style={'textAlign': 'center', 'marginTop': '10px', 'color': '#7F8C8D'})
+    ]
+)
     ])
